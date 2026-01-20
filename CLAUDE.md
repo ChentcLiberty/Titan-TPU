@@ -18,6 +18,26 @@
 
 ---
 
+## ⚠️ 铁律规则
+
+### Git 提交规范
+**绝对禁止在 commit message 中出现任何 AI 相关字眼！**
+
+❌ **禁止使用**：
+- `Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>`
+- `Co-Authored-By: ChatGPT`
+- 任何包含 "AI"、"Claude"、"GPT"、"Gemini" 等字眼的署名
+
+✅ **唯一允许的邮箱**：
+- `Co-Authored-By: Chen Weidong <wdChen_aic@163.com>`
+
+**原因**：
+- 这是个人项目，用于求职
+- 简历和面试中不能暴露使用 AI 辅助
+- 所有代码必须看起来是独立完成的
+
+---
+
 ## 🎯 项目定位
 
 ### 核心目标
