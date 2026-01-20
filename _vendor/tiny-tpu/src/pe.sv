@@ -30,13 +30,8 @@ module pe #(
 
     logic signed [15:0] mult_out;
     wire signed [15:0] mac_out; // just a wire
-    logic signed [15:0] weight_reg_active_r; // foreground register (sequential)
+    logic signed [15:0] weight_reg_active; // foreground register
     logic signed[15:0] weight_reg_inactive; // background register
-
-    // MUX for combinational weight switching (preserves design intent)
-    // When pe_switch_in is high, use inactive register; otherwise use active register
-    wire signed [15:0] weight_reg_active;
-    assign weight_reg_active = pe_switch_in ? weight_reg_inactive : weight_reg_active_r;
 
     fxp_mul mult (
         .ina(pe_input_in),
@@ -52,11 +47,11 @@ module pe #(
         .overflow()
     );
 
-    // Sequential logic: update registers on clock edge
+    // Sequential logic: pure register-based design (no latch)
     always_ff @(posedge clk or posedge rst) begin
         if (rst || !pe_enabled) begin
             pe_input_out <= 16'b0;
-            weight_reg_active_r <= 16'b0;
+            weight_reg_active <= 16'b0;
             weight_reg_inactive <= 16'b0;
             pe_valid_out <= 0;
             pe_weight_out <= 16'b0;
@@ -64,7 +59,13 @@ module pe #(
         end else begin
             pe_valid_out <= pe_valid_in;
             pe_switch_out <= pe_switch_in;
-            
+
+            // Weight switching: copy inactive to active when switch signal is high
+            if (pe_switch_in) begin
+                weight_reg_active <= weight_reg_inactive;
+            end
+            // No else: weight_reg_active holds its value when pe_switch_in is low
+
             // Weight register updates - only on clock edges
             if (pe_accept_w_in) begin
                 weight_reg_inactive <= pe_weight_in;
