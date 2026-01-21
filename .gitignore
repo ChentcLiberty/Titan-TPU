@@ -9,6 +9,7 @@ sim/vcs/*.vpd
 sim/vcs/novas.*
 sim/vcs/verdiLog/
 sim/vcs/ucli.key
+sim/vcs/sim/          # VCS自动生成的嵌套目录
 
 # Verdi 波形文件
 *.fsdb
