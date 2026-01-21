@@ -11,6 +11,9 @@ VCS     = vcs
 SIMV    = ./simv
 VERDI   = verdi
 
+# Verdi 安装路径（用于 PLI 库链接）
+VERDI_HOME = /home/jjt/install/synopsys/verdi/verdi/T-2022.06
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 目录配置（使用相对路径）
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -65,8 +68,7 @@ VCS_FLAGS = $(VCS_BASE_FLAGS) $(VCS_DEBUG_FLAGS) $(VCS_WARN_FLAGS)
 # 仿真选项
 SIM_FLAGS = \
 	-l $(LOG_DIR)/sim.log \
-	+fsdbfile+../../waveforms/tb_pe.fsdb \
-	+fsdbDumpvarsDA
+	+fsdbfile+../../waveforms/tb_pe.fsdb
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 源文件列表
