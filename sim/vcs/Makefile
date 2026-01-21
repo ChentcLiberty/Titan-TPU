@@ -38,10 +38,11 @@ VCS_BASE_FLAGS = \
 # Debug 选项（用于 Verdi 调试）
 VCS_DEBUG_FLAGS = \
 	-debug_access+all \
-	-debug_region+cell+encrypt \
 	-kdb \
 	+vcs+fsdbon \
-	+fsdb+autoflush
+	+fsdb+autoflush \
+	-P ${VERDI_HOME}/share/PLI/VCS/LINUX64/novas.tab \
+	${VERDI_HOME}/share/PLI/VCS/LINUX64/pli.a
 
 # 覆盖率选项
 VCS_COV_FLAGS = \
@@ -64,7 +65,8 @@ VCS_FLAGS = $(VCS_BASE_FLAGS) $(VCS_DEBUG_FLAGS) $(VCS_WARN_FLAGS)
 # 仿真选项
 SIM_FLAGS = \
 	-l $(LOG_DIR)/sim.log \
-	+fsdb+autoflush
+	+fsdbfile+../../waveforms/tb_pe.fsdb \
+	+fsdbDumpvarsDA
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 源文件列表
