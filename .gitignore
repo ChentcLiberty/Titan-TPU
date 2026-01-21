@@ -1,0 +1,43 @@
+# VCS 仿真生成文件
+sim/vcs/build/
+sim/vcs/csrc/
+sim/vcs/logs/
+sim/vcs/coverage/
+sim/vcs/*.log
+sim/vcs/*.fsdb
+sim/vcs/*.vpd
+sim/vcs/novas.*
+sim/vcs/verdiLog/
+sim/vcs/ucli.key
+
+# Verdi 波形文件
+*.fsdb
+*.fsdb+
+*.vpd
+novas.*
+verdiLog/
+
+# VCS 编译文件
+*.daidir/
+*.simv
+*.simv.daidir/
+csrc/
+simv
+simv.daidir/
+ucli.key
+
+# 覆盖率文件
+*.vdb/
+urgReport/
+*.log
+
+# 临时文件
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
