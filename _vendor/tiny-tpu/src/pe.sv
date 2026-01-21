@@ -56,6 +56,7 @@ module pe #(
             pe_valid_out <= 0;
             pe_weight_out <= 16'b0;
             pe_switch_out <= 0;
+            pe_psum_out <= 16'b0;  // 修复：复位时清零输出
         end else begin
             pe_valid_out <= pe_valid_in;
             pe_switch_out <= pe_switch_in;
@@ -78,7 +79,8 @@ module pe #(
                 pe_input_out <= pe_input_in;
                 pe_psum_out <= mac_out;
             end else begin
-                pe_valid_out <= 0;
+                // 修复：删除 pe_valid_out <= 0，因为第60行已经正确传播了
+                // pe_valid_out 由第60行的 pe_valid_out <= pe_valid_in 统一处理
                 pe_psum_out <= 16'b0;
             end
 
