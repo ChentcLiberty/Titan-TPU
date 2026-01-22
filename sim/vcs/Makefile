@@ -153,9 +153,9 @@ check: dirs
 # Verdi 波形查看
 # ═══════════════════════════════════════════════════════════════════════════════
 verdi:
-	@if [ -f $(WAVE_DIR)/*.fsdb ]; then \
-		echo "🔍 打开 Verdi..."; \
-		$(VERDI) -ssf $(WAVE_DIR)/*.fsdb -nologo & \
+	@if ls $(WAVE_DIR)/*.fsdb 1> /dev/null 2>&1; then \
+		echo "🔍 打开 Verdi（大字体模式）..."; \
+		./verdi_large_font.sh -ssf $(WAVE_DIR)/*.fsdb -nologo & \
 	else \
 		echo "❌ 未找到波形文件: $(WAVE_DIR)/*.fsdb"; \
 		echo "💡 请先运行: make pe"; \
