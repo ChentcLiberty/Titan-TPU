@@ -1,8 +1,8 @@
 # Titan-TPU V2 项目总览
 
-> **最后更新**: 2026-01-21
+> **最后更新**: 2026-01-22
 > **当前阶段**: Phase 1 - 核心理解 (Week 1)
-> **项目状态**: ✅ PE模块测试通过 - 准备Systolic Array测试
+> **项目状态**: ✅ PE模块测试通过 + Verdi调试环境完善 - 准备Systolic Array测试
 
 ---
 
@@ -190,9 +190,10 @@ run 1000+ tests  # 大规模测试
 
 ### 总体进度
 ```
-Phase 1 - 核心理解        [███░░░░░░░] 30%
+Phase 1 - 核心理解        [████░░░░░░] 40%
   ├─ 环境搭建              ✅ 完成
   ├─ PE 模块理解           ✅ 完成（Bug已修复，测试通过）
+  ├─ Verdi 调试环境        ✅ 完成（波形dump + 字体配置）
   ├─ Systolic Array       🔄 准备中
   ├─ VPU                  ⬜ 待做
   └─ Control Unit         ⬜ 待做
@@ -218,6 +219,12 @@ Phase 6 - 面试准备        [░░░░░░░░░░] 0%
   - 测试通过率：100% (11/11)
   - 提交：commit 1add2ce
 - [x] 创建 waveforms 目录
+- [x] **Verdi 调试环境完善** ✨
+  - 修复 FSDB 波形 dump 问题（添加 PLI 库）
+  - 设置 VERDI_HOME 绝对路径
+  - 创建 Verdi 启动脚本和字体配置
+  - 提交：commit 8f4e01c
+- [x] 清理冗余目录结构和 VCS 编译产物
 
 ### 进行中 🔄
 - [ ] **Systolic Array 理解与测试**
@@ -232,6 +239,27 @@ Phase 6 - 面试准备        [░░░░░░░░░░] 0%
 
 ### 最近修复的 Bug ✅
 ```
+Bug #2: Verdi 波形 dump 和字体配置问题
+修复日期: 2026-01-22
+问题1: $fsdbDumpvars() 调用失效，无法生成波形
+  - 原因: VERDI_HOME 环境变量未正确设置
+  - 修复: 在 Makefile 中设置 VERDI_HOME 绝对路径
+  - 结果: 波形文件成功生成到 sim/waveforms/
+
+问题2: Verdi 界面字体过小，难以阅读
+  - 原因: 默认字体配置不适合高分辨率显示器
+  - 修复: 创建 verdi_large_font.sh 脚本，配置大字体
+  - 结果: Verdi 界面清晰可读
+
+问题3: PLI 库未正确加载
+  - 原因: VCS 编译时缺少 -P 参数指定 PLI 库
+  - 修复: 在 Makefile 中添加 novas.tab 和 pli.a 路径
+  - 结果: FSDB dump 功能正常工作
+
+Git 提交: 8f4e01c, 1003a88, 88afcc2
+
+---
+
 Bug #1: PE 模块复位和 valid 信号问题
 修复日期: 2026-01-21
 问题1: 复位后 pe_psum_out 不为0
@@ -472,6 +500,17 @@ DC:     /home/jjt/install/synopsys/dc/syn/T-2022.03-SP2
 
 ## 📝 更新日志
 
+### 2026-01-22 ✨
+- ✅ **Verdi 调试环境完善**
+  - 修复 FSDB 波形 dump 问题：设置 VERDI_HOME 绝对路径
+  - 添加 PLI 库支持：novas.tab + pli.a
+  - 创建 Verdi 启动脚本：verdi_large_font.sh
+  - 配置大字体显示：解决高分辨率显示器字体过小问题
+  - 提交：commit 8f4e01c, 1003a88, 88afcc2
+- ✅ 清理项目结构：删除冗余目录和 VCS 编译产物（commit 97f1870）
+- ✅ 更新项目文档：同步 CLAUDE.md 到最新状态
+- 🎯 下一步：使用 Verdi 查看 PE 波形，开始 Systolic Array 测试
+
 ### 2026-01-21 ✨
 - ✅ **PE 模块 Bug 修复完成**
   - 修复复位逻辑：添加 `pe_psum_out` 清零
@@ -554,5 +593,5 @@ git log --oneline                  # 查看历史
 
 ---
 
-*最后更新: 2026-01-21 | 版本: v1.2*
+*最后更新: 2026-01-22 | 版本: v1.3*
 
