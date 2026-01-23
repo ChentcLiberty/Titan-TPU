@@ -344,11 +344,11 @@ Phase 6 - 面试准备        [░░░░░░░░░░] 0%
 
 ## 🔗 相关文档链接
 
-- **项目总览**: `CLAUDE.md`
+- **项目总览**: `docs/01_core/CLAUDE.md`
 - **行动计划**: `claude/ONE_MONTH_ACTION_PLAN.md`
-- **技术参考**: `claude/titan_tpu_docs/03_TECHNICAL_REFERENCE.md`
-- **进度追踪**: `claude/titan_tpu_docs/07_PROGRESS_TRACKER.md`
-- **Debug日志**: `claude/titan_tpu_docs/08_DEBUG_LOG.md`
+- **技术参考**: `docs/03_technical/TECHNICAL_REFERENCE.md`
+- **进度追踪**: `docs/04_progress/PROGRESS_TRACKER.md`
+- **Debug日志**: `docs/04_progress/DEBUG_LOG.md`
 
 ---
 

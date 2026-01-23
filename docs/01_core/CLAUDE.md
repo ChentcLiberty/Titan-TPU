@@ -421,7 +421,7 @@ DC:     /home/jjt/install/synopsys/dc/syn/T-2022.03-SP2
    - 会话交接模板
 
 3. **Progress Tracker 方法**
-   - 更新 `claude/titan_tpu_docs/07_PROGRESS_TRACKER.md`
+   - 更新 `docs/04_progress/PROGRESS_TRACKER.md`
    - 新对话时粘贴当前进度
 
 4. **Git 版本控制**
@@ -458,6 +458,10 @@ DC:     /home/jjt/install/synopsys/dc/syn/T-2022.03-SP2
 - [ ] VPU 模块理解
 - [ ] Control Unit 理解
 - [ ] 创建 Golden Model (Python)
+- [ ] **权重加载机制改进**（可选优化项 - 面试加分）
+  - 分析当前 broadcast 控制的局限性
+  - 设计 cascaded 控制方案（添加 pe_accept_w_out）
+  - 详见：`docs/07_future/enhancements/01_pe_accept_w_out.md`
 - [ ] Phase 1 总结
 
 ### 里程碑
@@ -586,8 +590,8 @@ git log --oneline                  # 查看历史
 ## ⚠️ 注意事项
 
 1. **每次新对话**：粘贴 `claude/01_MASTER_INSTRUCTIONS.md` 或本文件
-2. **每日更新**：更新进度到 `claude/titan_tpu_docs/07_PROGRESS_TRACKER.md`
-3. **遇到Bug**：记录到 `claude/titan_tpu_docs/08_DEBUG_LOG.md`
+2. **每日更新**：更新进度到 `docs/04_progress/PROGRESS_TRACKER.md`
+3. **遇到Bug**：记录到 `docs/04_progress/DEBUG_LOG.md`
 4. **Git提交**：每完成一个功能就提交
 5. **文档同步**：代码改了，文档也要更新
 
