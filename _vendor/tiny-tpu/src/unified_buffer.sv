@@ -259,27 +259,6 @@ module unified_buffer #(
     end 
 
     always @(posedge clk or posedge rst) begin
-        // Display variables in GTKWave
-        for (int i = 0; i < UNIFIED_BUFFER_WIDTH; i++) begin
-            $dumpvars(0, ub_memory[i]);
-        end
-        for (int i = 0; i < SYSTOLIC_ARRAY_WIDTH; i++) begin
-            $dumpvars(0, ub_wr_data_in[i]);
-            $dumpvars(0, ub_wr_valid_in[i]);
-            $dumpvars(0, ub_rd_input_data_out[i]);
-            $dumpvars(0, ub_rd_input_valid_out[i]);
-            $dumpvars(0, ub_rd_weight_data_out[i]);
-            $dumpvars(0, ub_rd_weight_valid_out[i]);
-            $dumpvars(0, ub_rd_bias_data_out[i]);
-            $dumpvars(0, ub_rd_Y_data_out[i]);
-            $dumpvars(0, ub_rd_H_data_out[i]);
-            $dumpvars(0, value_old_in[i]);
-            $dumpvars(0, grad_descent_valid_in[i]);
-            $dumpvars(0, grad_descent_done_out[i]);
-            $dumpvars(0, value_updated_out[i]);
-        end
-
-
         if (rst) begin
             // reset all memory to 0
             for (int i = 0; i < UNIFIED_BUFFER_WIDTH; i++) begin
