@@ -378,7 +378,8 @@ module unified_buffer #(
                     end
                 end
                 rd_input_time_counter <= rd_input_time_counter + 1;
-            end else begin 
+            end else if (!(ub_rd_start_in && ub_ptr_select == 0)) begin
+                // Only reset when not starting a new input read command
                 rd_input_ptr <= 0;
                 rd_input_row_size <= 0;
                 rd_input_col_size <= 0;
@@ -419,7 +420,8 @@ module unified_buffer #(
                     rd_weight_ptr = rd_weight_ptr + rd_weight_skip_size + 1;
                 end
                 rd_weight_time_counter <= rd_weight_time_counter + 1;
-            end else begin
+            end else if (!(ub_rd_start_in && ub_ptr_select == 1)) begin
+                // Only reset when not starting a new weight read command
                 rd_weight_ptr <= 0;
                 rd_weight_row_size <= 0;
                 rd_weight_col_size <= 0;
