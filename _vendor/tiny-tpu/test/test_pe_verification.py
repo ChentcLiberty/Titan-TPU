@@ -4,7 +4,7 @@ PE Module Verification with Reference Model
 """
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, ClockCycles
+from cocotb.triggers import RisingEdge, ClockCycles, ReadOnly, FallingEdge
 import random
 
 # ==================== 定点数转换 ====================
@@ -85,15 +85,15 @@ async def switch_weight_in_pe(dut):
     dut.pe_switch_in.value = 0
 
 async def compute_and_check(dut, ref_model, input_val, psum_in, expected):
-    """执行计算并比对结果"""
+    """执行计算并比对结果，返回错误列表"""
+    errors = []
+
     # 设置输入
     dut.pe_valid_in.value = 1
     dut.pe_input_in.value = to_fixed(input_val)
     dut.pe_psum_in.value = to_fixed(psum_in)
     await RisingEdge(dut.clk)
-
-    # 等待一个周期让输出生效
-    await RisingEdge(dut.clk)
+    await ReadOnly()  # 等待非阻塞赋值完成
 
     # 读取 DUT 输出
     dut_output_fixed = int(dut.pe_psum_out.value)
@@ -103,7 +103,7 @@ async def compute_and_check(dut, ref_model, input_val, psum_in, expected):
     ref_output = ref_model.compute(input_val, psum_in)
 
     # 比对结果（允许定点误差）
-    tolerance = 0.02  # Q8.8 定点数的量化误差
+    tolerance = 0.02
     error = abs(dut_output - ref_output)
 
     # 打印比对信息
@@ -112,15 +112,20 @@ async def compute_and_check(dut, ref_model, input_val, psum_in, expected):
           f"PSum={psum_in:6.2f} | DUT={dut_output:7.2f}, REF={ref_output:7.2f}, "
           f"Error={error:.4f}")
 
-    # 立即断言
-    assert error < tolerance, f"Output mismatch! DUT={dut_output:.2f}, REF={ref_output:.2f}, Error={error:.4f}"
+    # 收集错误
+    if error >= tolerance:
+        errors.append(f"Output mismatch! DUT={dut_output:.2f}, REF={ref_output:.2f}, Error={error:.4f}")
 
     # 检查输入传递
     dut_input_out = from_fixed(int(dut.pe_input_out.value))
-    assert abs(dut_input_out - input_val) < tolerance, f"Input passthrough failed! Expected={input_val}, Got={dut_input_out}"
+    if abs(dut_input_out - input_val) >= tolerance:
+        errors.append(f"Input passthrough failed! Expected={input_val}, Got={dut_input_out}")
 
+    # 在下降沿清零，valid只保持1个时钟周期
+    await FallingEdge(dut.clk)
     dut.pe_valid_in.value = 0
-    await RisingEdge(dut.clk)
+
+    return errors
 
 # ==================== 主测试 ====================
 @cocotb.test()
@@ -145,6 +150,7 @@ async def test_pe_with_reference_model(dut):
 
     # 遍历所有测试向量
     test_count = 0
+    all_errors = []
     for input_val, weight, psum_in, expected in test_vectors:
         test_count += 1
         print(f"\n--- Test Case {test_count} ---")
@@ -157,12 +163,19 @@ async def test_pe_with_reference_model(dut):
         await switch_weight_in_pe(dut)
         ref_model.switch_weight()
 
-        # 计算并检查
-        await compute_and_check(dut, ref_model, input_val, psum_in, expected)
+        # 计算并收集错误
+        test_errors = await compute_and_check(dut, ref_model, input_val, psum_in, expected)
+        if test_errors:
+            all_errors.extend([f"Test {test_count}: {e}" for e in test_errors])
 
     print("\n" + "="*80)
-    print(f"✓ All {test_count} test cases PASSED!")
-    print("="*80 + "\n")
+    if all_errors:
+        print(f"✗ {len(all_errors)} errors in {test_count} test cases")
+        print("="*80 + "\n")
+        assert False, "\n".join(all_errors)
+    else:
+        print(f"✓ All {test_count} test cases PASSED!")
+        print("="*80 + "\n")
 
 @cocotb.test()
 async def test_pe_random_vectors(dut):
@@ -181,10 +194,10 @@ async def test_pe_random_vectors(dut):
     ref_model.reset()
 
     num_random_tests = 10
-    random.seed(42)  # 可重复的随机测试
+    random.seed(42)
+    all_errors = []
 
     for i in range(num_random_tests):
-        # 生成随机测试数据（范围限制在 -10 到 10）
         input_val = random.uniform(-10, 10)
         weight = random.uniform(-10, 10)
         psum_in = random.uniform(-10, 10)
@@ -198,8 +211,15 @@ async def test_pe_random_vectors(dut):
         ref_model.switch_weight()
 
         expected = input_val * weight + psum_in
-        await compute_and_check(dut, ref_model, input_val, psum_in, expected)
+        test_errors = await compute_and_check(dut, ref_model, input_val, psum_in, expected)
+        if test_errors:
+            all_errors.extend([f"Random {i+1}: {e}" for e in test_errors])
 
     print("\n" + "="*80)
-    print(f"✓ All {num_random_tests} random tests PASSED!")
-    print("="*80 + "\n")
+    if all_errors:
+        print(f"✗ {len(all_errors)} errors in {num_random_tests} random tests")
+        print("="*80 + "\n")
+        assert False, "\n".join(all_errors)
+    else:
+        print(f"✓ All {num_random_tests} random tests PASSED!")
+        print("="*80 + "\n")
