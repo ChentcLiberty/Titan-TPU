@@ -46,6 +46,12 @@ test_pe: $(SIM_BUILD_DIR)
 	! grep failure results.xml
 	mv pe.vcd waveforms/ 2>/dev/null || true
 
+test_pe_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s pe -s dump -g2012 $(SOURCES) test/dump_pe.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_pe_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv pe.vcd waveforms/ 2>/dev/null || true
+
 test_leaky_relu: $(SIM_BUILD_DIR)
 	$(IVERILOG) -o $(SIM_VVP) -s leaky_relu -s dump -g2012 $(SOURCES) test/dump_leaky_relu.sv
 	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_leaky_relu $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
@@ -55,6 +61,12 @@ test_leaky_relu: $(SIM_BUILD_DIR)
 test_systolic: $(SIM_BUILD_DIR)
 	$(IVERILOG) -o $(SIM_VVP) -s systolic -s dump -g2012 $(SOURCES) test/dump_systolic.sv
 	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_systolic $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv systolic.vcd waveforms/ 2>/dev/null || true
+
+test_systolic_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s systolic -s dump -g2012 $(SOURCES) test/dump_systolic.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_systolic_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
 	! grep failure results.xml
 	mv systolic.vcd waveforms/ 2>/dev/null || true
 
