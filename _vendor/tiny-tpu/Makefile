@@ -70,6 +70,12 @@ test_systolic_verify: $(SIM_BUILD_DIR)
 	! grep failure results.xml
 	mv systolic.vcd waveforms/ 2>/dev/null || true
 
+test_systolic_boundary: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s systolic -s dump -g2012 $(SOURCES) test/dump_systolic.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_systolic_boundary $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv systolic.vcd waveforms/ 2>/dev/null || true
+
 test_nn: $(SIM_BUILD_DIR)
 	$(IVERILOG) -o $(SIM_VVP) -s nn -s dump -g2012 $(SOURCES) test/dump_nn.sv
 	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_nn $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
@@ -103,6 +109,14 @@ test_cu: $(SIM_BUILD_DIR)
 test_unified_buffer: $(SIM_BUILD_DIR)
 	$(IVERILOG) -o $(SIM_VVP) -s unified_buffer -s dump -g2012 $(SOURCES) test/dump_unified_buffer.sv
 	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_unified_buffer $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv unified_buffer.vcd waveforms/ 2>/dev/null || true
+
+SOURCES_UB_FIXED = $(subst src/unified_buffer.sv,src/unified_buffer_fixed.sv,$(SOURCES))
+
+test_ub_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s unified_buffer -s dump -g2012 $(SOURCES_UB_FIXED) test/dump_unified_buffer.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_ub_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
 	! grep failure results.xml
 	mv unified_buffer.vcd waveforms/ 2>/dev/null || true
 
