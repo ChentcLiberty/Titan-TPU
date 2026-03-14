@@ -113,12 +113,19 @@ test_unified_buffer: $(SIM_BUILD_DIR)
 	mv unified_buffer.vcd waveforms/ 2>/dev/null || true
 
 SOURCES_UB_FIXED = $(subst src/unified_buffer.sv,src/unified_buffer_fixed.sv,$(SOURCES))
+SOURCES_UB_V2 = $(subst src/unified_buffer.sv,src/unified_buffer_v2.sv,$(SOURCES))
 
 test_ub_verify: $(SIM_BUILD_DIR)
 	$(IVERILOG) -o $(SIM_VVP) -s unified_buffer -s dump -g2012 $(SOURCES_UB_FIXED) test/dump_unified_buffer.sv
 	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_ub_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
 	! grep failure results.xml
 	mv unified_buffer.vcd waveforms/ 2>/dev/null || true
+
+test_ub_v2_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s unified_buffer -s dump -g2012 $(SOURCES_UB_V2) test/dump_unified_buffer.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_ub_v2_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv unified_buffer.vcd waveforms/unified_buffer_v2.vcd 2>/dev/null || true
 
 # Loss module test
 
