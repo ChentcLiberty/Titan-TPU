@@ -26,7 +26,7 @@ SOURCES = src/pe.sv \
           src/bias_parent.sv \
           src/fixedpoint.sv \
           src/control_unit.sv \
-          src/unified_buffer.sv \
+          src/unified_buffer_fixed.sv \
           src/vpu.sv \
           src/loss_parent.sv \
 		  src/loss_child.sv \
@@ -114,6 +114,7 @@ test_unified_buffer: $(SIM_BUILD_DIR)
 
 SOURCES_UB_FIXED = $(subst src/unified_buffer.sv,src/unified_buffer_fixed.sv,$(SOURCES))
 SOURCES_UB_V2 = $(subst src/unified_buffer.sv,src/unified_buffer_v2.sv,$(SOURCES))
+SOURCES_UB_V3 = $(subst src/unified_buffer.sv,src/unified_buffer_v3.sv,$(SOURCES))
 
 test_ub_verify: $(SIM_BUILD_DIR)
 	$(IVERILOG) -o $(SIM_VVP) -s unified_buffer -s dump -g2012 $(SOURCES_UB_FIXED) test/dump_unified_buffer.sv
@@ -126,6 +127,12 @@ test_ub_v2_verify: $(SIM_BUILD_DIR)
 	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_ub_v2_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
 	! grep failure results.xml
 	mv unified_buffer.vcd waveforms/unified_buffer_v2.vcd 2>/dev/null || true
+
+test_ub_v3_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s unified_buffer -s dump -g2012 -DSIMULATION $(SOURCES_UB_V3) test/dump_unified_buffer.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_ub_v2_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv unified_buffer.vcd waveforms/unified_buffer_v3.vcd 2>/dev/null || true
 
 # Loss module test
 
@@ -197,6 +204,46 @@ test_gradient_descent: $(SIM_BUILD_DIR)
 	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_gradient_descent $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
 	! grep failure results.xml
 	mv gradient_descent.vcd waveforms/ 2>/dev/null || true
+
+# ============ Verification Tests ============
+
+test_bias_parent_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s bias_parent -s dump -g2012 $(SOURCES) test/dump_bias_parent.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_bias_parent_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv bias_parent.vcd waveforms/ 2>/dev/null || true
+
+test_leaky_relu_parent_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s leaky_relu_parent -s dump -g2012 $(SOURCES) test/dump_leaky_relu_parent.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_leaky_relu_parent_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv leaky_relu_parent.vcd waveforms/ 2>/dev/null || true
+
+test_leaky_relu_derivative_parent_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s leaky_relu_derivative_parent -s dump -g2012 $(SOURCES) test/dump_leaky_relu_derivative_parent.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_leaky_relu_derivative_parent_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv leaky_relu_derivative_parent.vcd waveforms/ 2>/dev/null || true
+
+test_loss_parent_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s loss_parent -s dump -g2012 $(SOURCES) test/dump_loss_parent.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_loss_parent_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv loss_parent.vcd waveforms/ 2>/dev/null || true
+
+test_vpu_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s vpu -s dump -g2012 $(SOURCES) test/dump_vpu.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_vpu_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv vpu.vcd waveforms/ 2>/dev/null || true
+
+test_tpu_verify: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s tpu -s dump -g2012 $(SOURCES) test/dump_tpu.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_tpu_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv tpu.vcd waveforms/ 2>/dev/null || true
+
+verify_all: test_bias_parent_verify test_leaky_relu_parent_verify test_leaky_relu_derivative_parent_verify test_loss_parent_verify test_vpu_verify test_tpu_verify
 
 
 # ============ DO NOT MODIFY BELOW THIS LINE ==============
