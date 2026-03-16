@@ -33,11 +33,76 @@ X = np.array([[0., 0.], [0., 1.], [1., 0.], [1., 1.]])
 Y = np.array([0, 1, 1, 0])
 W1 = np.array([[0.2985, -0.5792], [0.0913, 0.4234]])
 W2 = np.array([0.5266, 0.2958])
-B1 = [-0.4939, 0.189]
+B1 = np.array([-0.4939, 0.189])
 B2 = np.array([0.6358])
 LEARNING_RATE = 0.75
 LEAK_FACTOR = 0.5
 INV_N2 = 2.0 / len(X)
+
+
+# ============ 参考模型 ============
+class TPU_ReferenceModel:
+    """TPU 参考模型：用 numpy 实现完整的前向/反向传播"""
+
+    def __init__(self, X, Y, W1, W2, B1, B2, leak_factor, inv_n2):
+        self.X = fxp_array(X)
+        self.Y = fxp_array(Y)
+        self.W1 = fxp_array(W1)
+        self.W2 = fxp_array(W2)
+        self.B1 = fxp_array(B1)
+        self.B2 = fxp_array(B2)
+        self.leak = fxp(leak_factor)
+        self.inv_n2 = fxp(inv_n2)
+
+        # 缓存中间结果
+        self.Z1 = None
+        self.H1 = None
+        self.Z2 = None
+        self.H2 = None
+        self.dL_dZ2 = None
+        self.dL_dZ1 = None
+
+    def leaky_relu(self, x):
+        """Leaky ReLU 激活函数"""
+        return np.where(x >= 0, x, fxp_array(x * self.leak))
+
+    def leaky_relu_derivative(self, x, h):
+        """Leaky ReLU 导数（用于反向传播）"""
+        return np.where(h >= 0, x, fxp_array(x * self.leak))
+
+    def forward_layer1(self):
+        """前向传播第一层：H1 = leaky_relu(X @ W1^T + B1)"""
+        self.Z1 = fxp_array(self.X @ self.W1.T + self.B1)
+        self.H1 = self.leaky_relu(self.Z1)
+        return self.H1
+
+    def forward_layer2(self):
+        """前向传播第二层：H2 = leaky_relu(H1 @ W2^T + B2)"""
+        if self.H1 is None:
+            self.forward_layer1()
+        self.Z2 = fxp_array(self.H1 @ self.W2.reshape(-1, 1) + self.B2)
+        self.H2 = self.leaky_relu(self.Z2).flatten()
+        return self.H2
+
+    def compute_loss_gradient(self):
+        """计算损失梯度：dL/dZ2 = (H2 - Y) * inv_n2"""
+        if self.H2 is None:
+            self.forward_layer2()
+        diff = fxp_array(self.H2 - self.Y)
+        self.dL_dZ2 = fxp_array(diff * self.inv_n2)
+        return self.dL_dZ2
+
+    def backward_layer1(self):
+        """反向传播第一层：dL/dZ1 = leaky_relu'(dL/dH1) ⊙ H1"""
+        if self.dL_dZ2 is None:
+            self.compute_loss_gradient()
+
+        # dL/dH1 = dL/dZ2 @ W2
+        dL_dH1 = fxp_array(self.dL_dZ2.reshape(-1, 1) @ self.W2.reshape(1, -1))
+
+        # dL/dZ1 = leaky_relu_derivative(dL/dH1, H1)
+        self.dL_dZ1 = self.leaky_relu_derivative(dL_dH1, self.H1)
+        return self.dL_dZ1
 
 
 # ============ Scoreboard + Coverage ============
@@ -199,11 +264,13 @@ async def test_forward_layer1(dut):
     sb = Scoreboard("forward_layer1")
     cov = FunctionalCoverage()
 
-    # 期望的 H1 (修正：使用固定点精确计算值)
-    # H1 = leaky_relu(X @ W1^T + B1, leak=0.5)
-    # 原注释中 H1[0] 的期望值有误，已修正
-    exp_h1_col1 = [-0.2461, -0.5366, -0.0977, -0.3873]
-    exp_h1_col2 = [0.1875, 0.6124, 0.2803, 0.7037]
+    # 参考模型计算期望值
+    ref = TPU_ReferenceModel(X, Y, W1, W2, B1, B2, LEAK_FACTOR, INV_N2)
+    exp_H1 = ref.forward_layer1()
+    exp_h1_col1 = exp_H1[:, 0].tolist()
+    exp_h1_col2 = exp_H1[:, 1].tolist()
+    cocotb.log.info(f"[REF] H1_col1={exp_h1_col1}")
+    cocotb.log.info(f"[REF] H1_col2={exp_h1_col2}")
 
     await reset_and_init(dut)
     await load_all_data(dut)
@@ -451,18 +518,23 @@ async def test_transition_pathway(dut):
     # 收集 dL/dZ2 输出 (替代 FallingEdge)
     col1, col2 = await collect_outputs(dut, "dL_dZ2")
 
+    # 参考模型计算期望值
+    ref = TPU_ReferenceModel(X, Y, W1, W2, B1, B2, LEAK_FACTOR, INV_N2)
+    ref.forward_layer1()
+    ref.forward_layer2()
+    exp_dL_dZ2 = ref.compute_loss_gradient()
+    cocotb.log.info(f"[REF] dL_dZ2={exp_dL_dZ2.tolist()}")
+
     # dL/dZ2 是 1 维输出，只验证 col1
     cocotb.log.info(f"[dL_dZ2] collected col1={len(col1)} col2={len(col2)}")
     cocotb.log.info(f"[dL_dZ2] col1={col1}")
     cocotb.log.info(f"[dL_dZ2] col2={col2}")
 
-    # 用实际 RTL 输出做 sanity check: 符号正确性
-    # H2=[0.7183,0.5344,0.6673,0.64], Y=[0,1,1,0]
-    # dL/dZ2 符号: [+, -, -, +]
-    expected_signs = [1, -1, -1, 1]
+    # 验证符号正确性（更宽松的检查）
     for i in range(min(4, len(col1))):
+        exp_sign = 1 if exp_dL_dZ2[i] >= 0 else -1
         actual_sign = 1 if col1[i] >= 0 else -1
-        sb.check(i, expected_signs[i], actual_sign, "dL_dZ2_sign")
+        sb.check(i, exp_sign, actual_sign, "dL_dZ2_sign")
         cov.sample("transition_sign_check")
 
     cov.report()
@@ -478,9 +550,16 @@ async def test_backward_pass(dut):
     sb = Scoreboard("backward_pass")
     cov = FunctionalCoverage()
 
-    # 期望的 dL/dZ1 (来自 test_tpu.py 注释)
-    exp_col1 = [0.0946, -0.0613, -0.0438, 0.0843]
-    exp_col2 = [0.1062, -0.0689, -0.0492, 0.0947]
+    # 参考模型计算期望值
+    ref = TPU_ReferenceModel(X, Y, W1, W2, B1, B2, LEAK_FACTOR, INV_N2)
+    ref.forward_layer1()
+    ref.forward_layer2()
+    ref.compute_loss_gradient()
+    exp_dL_dZ1 = ref.backward_layer1()
+    exp_col1 = exp_dL_dZ1[:, 0].tolist()
+    exp_col2 = exp_dL_dZ1[:, 1].tolist()
+    cocotb.log.info(f"[REF] dL_dZ1_col1={exp_col1}")
+    cocotb.log.info(f"[REF] dL_dZ1_col2={exp_col2}")
 
     await reset_and_init(dut)
     await load_all_data(dut)
