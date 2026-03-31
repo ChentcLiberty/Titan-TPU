@@ -50,6 +50,21 @@ def reference_backward(H1, H2):
     dZ1 = leaky_relu_d(dH1, H1)
     return dZ2, dZ1
 
+
+def flatten_words(arr):
+    return [to_fxp(float(v)) for v in np.asarray(arr).reshape(-1)]
+
+
+def reference_params_after_update():
+    # tpu_soc currently ties learning_rate_in to zero, so the update stages
+    # should preserve the original parameter words in UB.
+    return {
+        "W1": flatten_words(W1),
+        "B1": flatten_words(B1),
+        "W2": flatten_words(W2),
+        "B2": flatten_words(B2),
+    }
+
 # ---- AXI-Lite 驱动 ----
 async def axil_write(dut, addr, data):
     await RisingEdge(dut.s_axil_aclk)
@@ -177,6 +192,16 @@ class Scoreboard:
             self.failed += 1
             cocotb.log.error(f"FAIL {tag}: exp={exp:.4f} got={got:.4f} err={err:.4f}")
 
+    def check_word(self, tag, exp, got):
+        exp &= 0xFFFF
+        got &= 0xFFFF
+        if got == exp:
+            self.passed += 1
+            cocotb.log.info(f"PASS {tag}: exp=0x{exp:04x} got=0x{got:04x}")
+        else:
+            self.failed += 1
+            cocotb.log.error(f"FAIL {tag}: exp=0x{exp:04x} got=0x{got:04x}")
+
     def report(self):
         cocotb.log.info(f"=== Scoreboard: {self.passed}/{self.passed+self.failed} PASS ===")
         assert self.failed == 0, f"{self.failed} checks failed"
@@ -272,7 +297,7 @@ async def test_tpu_soc_e2e(dut):
         raise TimeoutError("Sequencer did not complete")
 
     await ClockCycles(dut.s_axil_aclk, 10)
-    collector.cancel()
+    collector.kill()
 
     cocotb.log.info(f"col1 ({len(col1)}): {col1}")
     cocotb.log.info(f"col2 ({len(col2)}): {col2}")
@@ -280,16 +305,56 @@ async def test_tpu_soc_e2e(dut):
     # 参考模型
     H1_ref, H2_ref = reference_forward()
     dZ2_ref, dZ1_ref = reference_backward(H1_ref, H2_ref)
+    params_after_update = reference_params_after_update()
     cocotb.log.info(f"REF H1[:,0]={H1_ref[:,0].tolist()}")
     cocotb.log.info(f"REF H1[:,1]={H1_ref[:,1].tolist()}")
+    cocotb.log.info(f"REF dZ2={dZ2_ref.tolist()}")
+    cocotb.log.info(f"REF dZ1[:,0]={dZ1_ref[:,0].tolist()}")
+    cocotb.log.info(f"REF dZ1[:,1]={dZ1_ref[:,1].tolist()}")
+
+    if len(col1) < 12 or len(col2) < 8:
+        raise AssertionError(
+            f"Unexpected output counts: need col1>=12 col2>=8, got col1={len(col1)} col2={len(col2)}"
+        )
+
+    h1_col1 = col1[0:4]
+    h1_col2 = col2[0:4]
+    dz2_col1 = col1[4:8]
+    dz1_col1 = col1[8:12]
+    dz1_col2 = col2[4:8]
 
     sb = Scoreboard()
 
-    # H1: forward_layer1 输出，4 samples × 2 lanes
-    # col1=H1[:,0], col2=H1[:,1]（前4个输出）
-    for i in range(min(4, len(col1))):
-        sb.check(f"H1[{i},0]", H1_ref[i, 0], col1[i])
-    for i in range(min(4, len(col2))):
-        sb.check(f"H1[{i},1]", H1_ref[i, 1], col2[i])
+    for i in range(4):
+        sb.check(f"H1[{i},0]", H1_ref[i, 0], h1_col1[i])
+    for i in range(4):
+        sb.check(f"H1[{i},1]", H1_ref[i, 1], h1_col2[i])
+
+    for i in range(4):
+        sb.check(f"dZ2[{i}]", dZ2_ref[i], dz2_col1[i])
+
+    for i in range(4):
+        sb.check(f"dZ1[{i},0]", dZ1_ref[i, 0], dz1_col1[i])
+    for i in range(4):
+        sb.check(f"dZ1[{i},1]", dZ1_ref[i, 1], dz1_col2[i])
+
+    def ub_word(addr):
+        return int(dut.dut.tpu_inst.ub_inst.ub_memory[addr].value) & 0xFFFF
+
+    dz2_words = flatten_words(dZ2_ref)
+    dz1_words = flatten_words(dZ1_ref)
+    for i, exp in enumerate(dz2_words):
+        sb.check(f"UB dZ2[{i}]", from_fxp(exp), from_fxp(ub_word(29 + i)))
+    for i, exp in enumerate(dz1_words):
+        sb.check(f"UB dZ1[{i}]", from_fxp(exp), from_fxp(ub_word(33 + i)))
+
+    for i, exp in enumerate(params_after_update["W1"]):
+        sb.check_word(f"UB W1[{i}]", exp, ub_word(12 + i))
+    for i, exp in enumerate(params_after_update["B1"]):
+        sb.check_word(f"UB B1[{i}]", exp, ub_word(16 + i))
+    for i, exp in enumerate(params_after_update["W2"]):
+        sb.check_word(f"UB W2[{i}]", exp, ub_word(18 + i))
+    for i, exp in enumerate(params_after_update["B2"]):
+        sb.check_word(f"UB B2[{i}]", exp, ub_word(20 + i))
 
     sb.report()
