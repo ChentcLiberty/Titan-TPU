@@ -74,6 +74,7 @@ module tpu_soc #(
     logic [3:0]  vpu_data_pathway;
     logic [15:0] inv_batch_size_times_two;
     logic [15:0] vpu_leak_factor;
+    logic [15:0] learning_rate;
 
     // UB read outputs (not exposed at SoC top in this version)
     logic [15:0] ub_rd_input_data_out_0, ub_rd_input_data_out_1;
@@ -131,7 +132,8 @@ module tpu_soc #(
         .ub_ptr_sel_out              (ub_ptr_sel),
         .vpu_data_pathway_out        (vpu_data_pathway),
         .inv_batch_size_times_two_out(inv_batch_size_times_two),
-        .vpu_leak_factor_out         (vpu_leak_factor)
+        .vpu_leak_factor_out         (vpu_leak_factor),
+        .learning_rate_out           (learning_rate)
     );
 
     // -------------------------------------------------------------------------
@@ -155,7 +157,7 @@ module tpu_soc #(
         .ub_rd_row_size             ({12'h0, ub_rd_row_size}),  // 16-bit, extend from 4-bit
         .ub_rd_col_size             ({14'h0, ub_rd_col_size}),  // 16-bit, extend from 2-bit
 
-        .learning_rate_in           (16'h0),   // not exposed in this version
+        .learning_rate_in           (learning_rate),
 
         .vpu_data_pathway           (vpu_data_pathway),
         .sys_switch_in              (sys_switch),

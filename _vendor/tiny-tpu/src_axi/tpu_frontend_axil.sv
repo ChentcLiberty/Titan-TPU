@@ -15,6 +15,9 @@
 //   0x34  IMEM_W0    32-bit opcode instruction to commit
 //   0x40  IMEM_WE    write-1 commits IMEM_W0 into imem[IMEM_ADDR]
 //   0x44  IMEM_LEN   number of valid instructions in IMEM
+//   0x50  LEAK       leaky-relu factor (Q8.8)
+//   0x54  INV_BATCH  inverse batch scaling for loss path (Q8.8)
+//   0x58  LR         learning rate for in-UB gradient descent (Q8.8)
 //
 // Instruction format (32-bit opcode):
 //   opcode=3'b000  NOP
@@ -76,7 +79,8 @@ module tpu_frontend_axil #(
     output logic [2:0]  ub_ptr_sel_out,
     output logic [3:0]  vpu_data_pathway_out,
     output logic [15:0] inv_batch_size_times_two_out,
-    output logic [15:0] vpu_leak_factor_out
+    output logic [15:0] vpu_leak_factor_out,
+    output logic [15:0] learning_rate_out
 );
 
     assign clk_out = s_axil_aclk;
@@ -95,6 +99,7 @@ module tpu_frontend_axil #(
     logic        busy_reg;
     logic [15:0] leak_factor_reg;
     logic [15:0] inv_batch_n2_reg;
+    logic [15:0] learning_rate_reg;
     logic [3:0]  vpu_pathway_reg;  // latched vpu_data_pathway, persists between instructions
 
     // -------------------------------------------------------------------------
@@ -290,6 +295,7 @@ module tpu_frontend_axil #(
             imem_len_reg     <= '0;
             leak_factor_reg  <= '0;
             inv_batch_n2_reg <= '0;
+            learning_rate_reg <= '0;
             vpu_pathway_reg  <= '0;
             for (int i = 0; i < IMEM_DEPTH; i++) imem[i] <= '0;
         end else begin
@@ -314,8 +320,9 @@ module tpu_frontend_axil #(
                     12'h034: imem_w0_reg     <= wd_lat;
                     12'h040: if (wd_lat[0]) imem[imem_addr_reg] <= imem_w0_reg;
                     12'h044: imem_len_reg    <= wd_lat[5:0];
-                    12'h050: leak_factor_reg  <= wd_lat[15:0];
-                    12'h054: inv_batch_n2_reg <= wd_lat[15:0];
+                    12'h050: leak_factor_reg   <= wd_lat[15:0];
+                    12'h054: inv_batch_n2_reg  <= wd_lat[15:0];
+                    12'h058: learning_rate_reg <= wd_lat[15:0];
                     default: ;
                 endcase
             end
@@ -345,6 +352,9 @@ module tpu_frontend_axil #(
                     12'h030: s_axil_rdata <= {26'h0, imem_addr_reg};
                     12'h034: s_axil_rdata <= imem_w0_reg;
                     12'h044: s_axil_rdata <= {26'h0, imem_len_reg};
+                    12'h050: s_axil_rdata <= {16'h0, leak_factor_reg};
+                    12'h054: s_axil_rdata <= {16'h0, inv_batch_n2_reg};
+                    12'h058: s_axil_rdata <= {16'h0, learning_rate_reg};
                     default:  s_axil_rdata <= 32'hDEAD_BEEF;
                 endcase
             end else if (s_axil_rvalid && s_axil_rready) begin
@@ -387,6 +397,7 @@ module tpu_frontend_axil #(
     // -------------------------------------------------------------------------
     assign inv_batch_size_times_two_out = inv_batch_n2_reg;
     assign vpu_leak_factor_out          = leak_factor_reg;
+    assign learning_rate_out            = learning_rate_reg;
     assign vpu_data_pathway_out         = vpu_pathway_reg;
 
     assign ub_wr_host_valid_out_0 = ub_push0_pulse ? 1'b1        : cu_ub_valid_0;

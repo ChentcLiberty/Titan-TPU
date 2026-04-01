@@ -493,7 +493,10 @@ module unified_buffer #(
                     ub_memory[gd_wr_lane_addr[j]] <= value_updated_out[j];
                 end
             end
-            grad_descent_ptr <= grad_descent_ptr_next;
+            // Preserve the freshly loaded base pointer on the update start cycle.
+            if (!(ub_rd_start_in && (ub_ptr_select == 5 || ub_ptr_select == 6))) begin
+                grad_descent_ptr <= grad_descent_ptr_next;
+            end
 
     // ============ READING LOGIC (Input) ============
             if (rd_input_time_counter + 1 < rd_input_row_size + rd_input_col_size) begin

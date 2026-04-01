@@ -32,6 +32,9 @@ B1 = fxpa(np.array([-0.4939, 0.189]))
 B2 = fxpa(np.array([0.6358]))
 LEAK   = fxp(0.5)
 INV_N2 = fxp(2.0 / 4)
+LR     = fxp(0.125)
+TILE_WIDTH = 2
+PARAM_TOLERANCE = 0.01
 
 # ---- 参考模型 ----
 def leaky_relu(x):      return np.where(x >= 0, x, fxpa(x * LEAK))
@@ -55,14 +58,49 @@ def flatten_words(arr):
     return [to_fxp(float(v)) for v in np.asarray(arr).reshape(-1)]
 
 
-def reference_params_after_update():
-    # tpu_soc currently ties learning_rate_in to zero, so the update stages
-    # should preserve the original parameter words in UB.
+def fxp_mul_scalar(a, b):
+    return fxp(float(a) * float(b))
+
+
+def apply_update_scalar(param, grad, lr=LR):
+    return fxp(float(param) - fxp_mul_scalar(grad, lr))
+
+
+def reference_params_after_update(H1, dZ2, dZ1):
+    w1 = np.array(W1, dtype=float, copy=True)
+    b1 = np.array(B1, dtype=float, copy=True)
+    w2 = np.array(W2, dtype=float, copy=True)
+    b2 = np.array(B2, dtype=float, copy=True)
+
+    # Bias updates are accumulated sample by sample in the in-UB gradient_descent path.
+    for g in np.asarray(dZ2).reshape(-1):
+        b2[0] = apply_update_scalar(b2[0], g)
+
+    for row in np.asarray(dZ1):
+        for j in range(b1.shape[0]):
+            b1[j] = apply_update_scalar(b1[j], row[j])
+
+    # Weight updates happen tile by tile; each tile produces one outer-product partial sum.
+    for tile_start in range(0, len(dZ2), TILE_WIDTH):
+        dz2_tile = np.asarray(dZ2[tile_start:tile_start + TILE_WIDTH], dtype=float)
+        h1_tile = np.asarray(H1[tile_start:tile_start + TILE_WIDTH], dtype=float)
+        tile_grad_w2 = fxpa(dz2_tile.reshape(1, -1) @ h1_tile).reshape(-1)
+        for j, grad in enumerate(tile_grad_w2):
+            w2[j] = apply_update_scalar(w2[j], grad)
+
+    for tile_start in range(0, dZ1.shape[0], TILE_WIDTH):
+        dz1_tile = np.asarray(dZ1[tile_start:tile_start + TILE_WIDTH], dtype=float)
+        x_tile = np.asarray(X[tile_start:tile_start + TILE_WIDTH], dtype=float)
+        tile_grad_w1 = fxpa(dz1_tile.T @ x_tile)
+        for r in range(w1.shape[0]):
+            for c in range(w1.shape[1]):
+                w1[r, c] = apply_update_scalar(w1[r, c], tile_grad_w1[r, c])
+
     return {
-        "W1": flatten_words(W1),
-        "B1": flatten_words(B1),
-        "W2": flatten_words(W2),
-        "B2": flatten_words(B2),
+        "W1": flatten_words(w1),
+        "B1": flatten_words(b1),
+        "W2": flatten_words(w2),
+        "B2": flatten_words(b2),
     }
 
 # ---- AXI-Lite 驱动 ----
@@ -202,6 +240,15 @@ class Scoreboard:
             self.failed += 1
             cocotb.log.error(f"FAIL {tag}: exp=0x{exp:04x} got=0x{got:04x}")
 
+    def check_param(self, tag, exp, got):
+        err = abs(got - exp)
+        if err <= PARAM_TOLERANCE:
+            self.passed += 1
+            cocotb.log.info(f"PASS {tag}: exp={exp:.4f} got={got:.4f}")
+        else:
+            self.failed += 1
+            cocotb.log.error(f"FAIL {tag}: exp={exp:.4f} got={got:.4f} err={err:.4f}")
+
     def report(self):
         cocotb.log.info(f"=== Scoreboard: {self.passed}/{self.passed+self.failed} PASS ===")
         assert self.failed == 0, f"{self.failed} checks failed"
@@ -227,6 +274,7 @@ async def test_tpu_soc_e2e(dut):
     # 配置全局参数
     await axil_write(dut, 0x050, to_fxp(LEAK))    # LEAK_FACTOR
     await axil_write(dut, 0x054, to_fxp(INV_N2))  # INV_BATCH_N2
+    await axil_write(dut, 0x058, to_fxp(LR))      # LEARNING_RATE
 
     # 加载 UB 数据（精确双 lane 交错）
     await load_all_data_axil(dut)
@@ -305,12 +353,17 @@ async def test_tpu_soc_e2e(dut):
     # 参考模型
     H1_ref, H2_ref = reference_forward()
     dZ2_ref, dZ1_ref = reference_backward(H1_ref, H2_ref)
-    params_after_update = reference_params_after_update()
+    params_after_update = reference_params_after_update(H1_ref, dZ2_ref, dZ1_ref)
     cocotb.log.info(f"REF H1[:,0]={H1_ref[:,0].tolist()}")
     cocotb.log.info(f"REF H1[:,1]={H1_ref[:,1].tolist()}")
     cocotb.log.info(f"REF dZ2={dZ2_ref.tolist()}")
     cocotb.log.info(f"REF dZ1[:,0]={dZ1_ref[:,0].tolist()}")
     cocotb.log.info(f"REF dZ1[:,1]={dZ1_ref[:,1].tolist()}")
+    cocotb.log.info(f"REF LR={LR:.4f}")
+    cocotb.log.info(f"REF updated W1={list(map(from_fxp, params_after_update['W1']))}")
+    cocotb.log.info(f"REF updated B1={list(map(from_fxp, params_after_update['B1']))}")
+    cocotb.log.info(f"REF updated W2={list(map(from_fxp, params_after_update['W2']))}")
+    cocotb.log.info(f"REF updated B2={list(map(from_fxp, params_after_update['B2']))}")
 
     if len(col1) < 12 or len(col2) < 8:
         raise AssertionError(
@@ -349,12 +402,12 @@ async def test_tpu_soc_e2e(dut):
         sb.check(f"UB dZ1[{i}]", from_fxp(exp), from_fxp(ub_word(33 + i)))
 
     for i, exp in enumerate(params_after_update["W1"]):
-        sb.check_word(f"UB W1[{i}]", exp, ub_word(12 + i))
+        sb.check_param(f"UB W1[{i}]", from_fxp(exp), from_fxp(ub_word(12 + i)))
     for i, exp in enumerate(params_after_update["B1"]):
-        sb.check_word(f"UB B1[{i}]", exp, ub_word(16 + i))
+        sb.check_param(f"UB B1[{i}]", from_fxp(exp), from_fxp(ub_word(16 + i)))
     for i, exp in enumerate(params_after_update["W2"]):
-        sb.check_word(f"UB W2[{i}]", exp, ub_word(18 + i))
+        sb.check_param(f"UB W2[{i}]", from_fxp(exp), from_fxp(ub_word(18 + i)))
     for i, exp in enumerate(params_after_update["B2"]):
-        sb.check_word(f"UB B2[{i}]", exp, ub_word(20 + i))
+        sb.check_param(f"UB B2[{i}]", from_fxp(exp), from_fxp(ub_word(20 + i)))
 
     sb.report()
