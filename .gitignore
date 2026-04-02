@@ -63,3 +63,7 @@ _vendor/tiny-tpu/waveforms/*.fst
 _vendor/tiny-tpu/waveforms/vcd2fsdbLog/
 _vendor/tiny-tpu/resume_test.pdf
 _vendor/tiny-tpu/resume_test.png
+
+# Local backup files
+*.bak
+*.bak_*
