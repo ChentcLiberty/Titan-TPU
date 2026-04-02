@@ -1,19 +1,22 @@
 [*]
-[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Tue Aug  5 22:48:33 2025
+[*] GTKWave Analyzer v3.3.121 (w)1999-2024 BSI
+[*] Sun Mar 15 16:14:23 2026
 [*]
-[dumpfile] "/Users/evanlin/Desktop/tinytpuv2/waveforms/vpu.vcd"
-[dumpfile_mtime] "Tue Aug  5 21:46:17 2025"
-[dumpfile_size] 33863
-[savefile] "/Users/evanlin/Desktop/tinytpuv2/waveforms/vpu.gtkw"
-[timestart] 294300
-[size] 1512 822
-[pos] -1 -1
-*-14.550008 348800 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[dumpfile] "/home/jjt/TitanTPU/_vendor/tiny-tpu/waveforms/vpu.vcd"
+[dumpfile_mtime] "Sun Mar 15 11:12:40 2026"
+[dumpfile_size] 37501
+[savefile] "/home/jjt/TitanTPU/_vendor/tiny-tpu/waveforms/vpu.gtkw"
+[timestart] 0
+[size] 3627 1817
+[pos] -1 27
+*-15.676549 224100 224100 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] vpu.
+[treeopen] vpu.bias_parent_inst.
+[treeopen] vpu.leaky_relu_parent_inst.
 [sst_width] 276
 [signals_width] 244
 [sst_expanded] 1
-[sst_vpaned_height] 285
+[sst_vpaned_height] 727
 @40000420
 [fpshift_count] 8
 vpu.clk
@@ -27,8 +30,10 @@ vpu.vpu_data_in_2[15:0]
 vpu.vpu_valid_in_1
 [fpshift_count] 8
 vpu.vpu_valid_in_2
+@40000421
 [fpshift_count] 8
 vpu.vpu_data_out_1[15:0]
+@40000420
 [fpshift_count] 8
 vpu.vpu_data_out_2[15:0]
 [fpshift_count] 8
@@ -39,5 +44,71 @@ vpu.vpu_valid_out_2
 vpu.H_in_1[15:0]
 [fpshift_count] 8
 vpu.H_in_2[15:0]
+@28
+vpu.bias_valid_1_in
+vpu.bias_valid_2_out
+@40000420
+[fpshift_count] 8
+vpu.bias_data_1_in[15:0]
+[fpshift_count] 8
+vpu.bias_data_2_in[15:0]
+[fpshift_count] 8
+vpu.bias_scalar_in_1[15:0]
+[fpshift_count] 8
+vpu.bias_scalar_in_2[15:0]
+@28
+[color] 1
+vpu.vpu_data_pathway[3:0]
+@40000420
+[color] 2
+[fpshift_count] 8
+vpu.bias_parent_inst.bias_sys_data_in_1[15:0]
+[color] 2
+[fpshift_count] 8
+vpu.bias_parent_inst.bias_sys_data_in_2[15:0]
+[color] 2
+[fpshift_count] 8
+vpu.bias_parent_inst.bias_z_data_out_1[15:0]
+[color] 2
+[fpshift_count] 8
+vpu.bias_parent_inst.bias_z_data_out_2[15:0]
+[color] 3
+[fpshift_count] 8
+vpu.leaky_relu_parent_inst.lr_data_1_in[15:0]
+[color] 3
+[fpshift_count] 8
+vpu.leaky_relu_parent_inst.lr_data_2_in[15:0]
+[color] 3
+[fpshift_count] 8
+vpu.leaky_relu_parent_inst.lr_data_1_out[15:0]
+[color] 3
+[fpshift_count] 8
+vpu.leaky_relu_parent_inst.lr_data_2_out[15:0]
+@22
+[color] 5
+vpu.loss_parent_inst.H_1_in[15:0]
+[color] 5
+vpu.loss_parent_inst.H_2_in[15:0]
+[color] 5
+vpu.loss_parent_inst.Y_1_in[15:0]
+[color] 5
+vpu.loss_parent_inst.Y_2_in[15:0]
+vpu.loss_parent_inst.gradient_1_out[15:0]
+vpu.loss_parent_inst.gradient_2_out[15:0]
+@40000420
+[fpshift_count] 8
+vpu.leaky_relu_derivative_parent_inst.lr_d_H_1_in[15:0]
+[fpshift_count] 8
+vpu.leaky_relu_derivative_parent_inst.lr_d_H_2_in[15:0]
+[fpshift_count] 8
+vpu.leaky_relu_derivative_parent_inst.lr_d_data_1_in[15:0]
+[fpshift_count] 8
+vpu.leaky_relu_derivative_parent_inst.lr_d_data_2_in[15:0]
+[fpshift_count] 8
+vpu.leaky_relu_derivative_parent_inst.lr_d_data_1_out[15:0]
+[fpshift_count] 8
+vpu.leaky_relu_derivative_parent_inst.lr_d_data_2_out[15:0]
+@28
+vpu.leaky_relu_derivative_parent_inst.lr_d_valid_1_out
 [pattern_trace] 1
 [pattern_trace] 0
