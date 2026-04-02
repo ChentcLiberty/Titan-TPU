@@ -36,3 +36,28 @@ results.xml
 gtkwave
 
 archive
+# Local backup/debug artifacts
+*.bak
+*.bak_*
+*.mr
+*-verilog.pvl
+*-verilog.syn
+*.svf
+*.swp
+
+# Local synthesis/simulator output
+alib-52/
+vfastLog/
+sim_build_vcs/
+tiny-tpu-200m/
+tiny-tpu-instruction/
+waveforms/*.fst
+waveforms/vcd2fsdbLog/
+
+# Compiler local cache/backups
+compiler/__pycache__/
+compiler/out/*.bak_*
+
+# Local one-off exports
+resume_test.pdf
+resume_test.png

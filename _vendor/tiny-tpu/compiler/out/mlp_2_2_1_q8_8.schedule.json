@@ -473,6 +473,23 @@
     },
     {
       "stage": "backward_layer1",
+      "name": "load_old_b1",
+      "kind": "ub_read",
+      "tensor": "B1",
+      "signals": {
+        "ub_rd_start_in": 1,
+        "ub_ptr_select": 5,
+        "ub_rd_addr_in": 16,
+        "ub_rd_row_size": 4,
+        "ub_rd_col_size": 2,
+        "ub_rd_transpose": 0,
+        "vpu_data_pathway": "0001"
+      },
+      "wait_after": 0,
+      "note": "Prime the in-UB B1 update path before the derivative stream starts."
+    },
+    {
+      "stage": "backward_layer1",
       "name": "stream_dz2",
       "kind": "ub_read",
       "tensor": "dZ2",
@@ -490,23 +507,6 @@
     },
     {
       "stage": "backward_layer1",
-      "name": "load_old_b1",
-      "kind": "ub_read",
-      "tensor": "B1",
-      "signals": {
-        "ub_rd_start_in": 1,
-        "ub_ptr_select": 5,
-        "ub_rd_addr_in": 16,
-        "ub_rd_row_size": 4,
-        "ub_rd_col_size": 2,
-        "ub_rd_transpose": 0,
-        "vpu_data_pathway": "0001"
-      },
-      "wait_after": 0,
-      "note": "Prime the in-UB B1 update path one instruction before dZ1 reaches the VPU output."
-    },
-    {
-      "stage": "backward_layer1",
       "name": "stream_h1_for_derivative",
       "kind": "ub_read",
       "tensor": "H1",
@@ -520,7 +520,7 @@
         "vpu_data_pathway": "0001"
       },
       "wait_after": 1,
-      "note": "Derivative path uses the sign of H1 while B1 update is already armed."
+      "note": "Start the H1 sign stream immediately after dH1 so the derivative stage sees aligned activations while B1 is already armed."
     },
     {
       "stage": "backward_layer1",

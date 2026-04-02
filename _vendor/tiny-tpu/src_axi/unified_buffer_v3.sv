@@ -23,6 +23,7 @@ module unified_buffer #(
     // Write ports from host to UB (for loading in parameters)
     input logic [15:0] ub_wr_host_data_in [SYSTOLIC_ARRAY_WIDTH],
     input logic ub_wr_host_valid_in [SYSTOLIC_ARRAY_WIDTH],
+    input logic ub_wr_ptr_restore_in,
 
     // Read instruction input from instruction memory
     input logic ub_rd_start_in,
@@ -92,6 +93,7 @@ module unified_buffer #(
 
     logic [15:0] wr_ptr;
     logic [15:0] wr_ptr_next;
+    logic [15:0] wr_ptr_base;
 
     // Internal logic for reading inputs from UB to left side of systolic array
     logic [15:0] rd_input_ptr;
@@ -135,6 +137,8 @@ module unified_buffer #(
     logic [15:0] rd_grad_bias_row_size;
     logic [15:0] rd_grad_bias_col_size;
     logic [15:0] rd_grad_bias_time_counter;
+    logic rd_grad_bias_started;
+    logic [15:0] rd_grad_bias_value_phase;
 
     // Internal logic for weight gradient descent inputs
     logic [15:0] rd_grad_weight_ptr;
@@ -209,16 +213,25 @@ module unified_buffer #(
 
     // Gradient descent valid signal generation
     always_comb begin
-        if (
-            rd_grad_bias_time_counter < rd_grad_bias_row_size + rd_grad_bias_col_size ||
-            rd_grad_weight_time_counter < rd_grad_weight_row_size + rd_grad_weight_col_size
-        ) begin
+        for (int j = 0; j < SYSTOLIC_ARRAY_WIDTH; j++) begin
+            grad_descent_valid_in[j] = 1'b0;
+        end
+
+        if ((rd_grad_bias_row_size != 0 || rd_grad_bias_col_size != 0) &&
+            (rd_grad_bias_time_counter + 1 < rd_grad_bias_row_size + rd_grad_bias_col_size)) begin
+            for (int j = 0; j < SYSTOLIC_ARRAY_WIDTH; j++) begin
+                if (rd_grad_bias_time_counter >= j &&
+                    rd_grad_bias_time_counter < rd_grad_bias_row_size + j &&
+                    j < rd_grad_bias_col_size) begin
+                    grad_descent_valid_in[j] = ub_wr_valid_in[j];
+                end
+            end
+        end else if (rd_grad_weight_time_counter < rd_grad_weight_row_size + rd_grad_weight_col_size) begin
+            // Weight updates need the final systolic beat as well. The current
+            // counter is already one cycle ahead of the accepted output wavefront,
+            // so "+1 <" drops the last lane1 update for W2 and W1 column 2.
             for (int j = 0; j < SYSTOLIC_ARRAY_WIDTH; j++) begin
                 grad_descent_valid_in[j] = ub_wr_valid_in[j];
-            end
-        end else begin
-            for (int j = 0; j < SYSTOLIC_ARRAY_WIDTH; j++) begin
-                grad_descent_valid_in[j] = 1'b0;
             end
         end
     end
@@ -320,6 +333,15 @@ module unified_buffer #(
         end
     end
 
+    // Bias update old values are consumed by gradient_descent one cycle later, so preload
+    // the next bias wavefront once the derivative stream has started.
+    always_comb begin
+        rd_grad_bias_value_phase = rd_grad_bias_time_counter;
+        if (rd_grad_bias_started || ub_wr_valid_in[0] || ub_wr_valid_in[1]) begin
+            rd_grad_bias_value_phase = rd_grad_bias_time_counter + 1;
+        end
+    end
+
     // grad_descent_ptr_next and per-lane write addresses
     always_comb begin
         grad_descent_ptr_next = grad_descent_ptr;
@@ -359,6 +381,7 @@ module unified_buffer #(
             end
 
             wr_ptr <= '0;
+            wr_ptr_base <= '0;
 
             rd_input_ptr <= '0;
             rd_input_row_size <= '0;
@@ -381,6 +404,7 @@ module unified_buffer #(
             rd_bias_row_size <= '0;
             rd_bias_col_size <= '0;
             rd_bias_time_counter <= '0;
+            rd_grad_bias_started <= 1'b0;
 
             rd_Y_ptr <= '0;
             rd_Y_row_size <= '0;
@@ -462,6 +486,7 @@ module unified_buffer #(
                         rd_grad_bias_row_size <= ub_rd_row_size;
                         rd_grad_bias_col_size <= ub_rd_col_size;
                         rd_grad_bias_time_counter <= '0;
+                        rd_grad_bias_started <= 1'b0;
                         grad_bias_or_weight <= 1'b0;
                         grad_descent_ptr <= ub_rd_addr_in;
                     end
@@ -485,7 +510,14 @@ module unified_buffer #(
                     ub_memory[wr_lane_addr[j]] <= ub_wr_host_data_in[j];
                 end
             end
-            wr_ptr <= wr_ptr_next;
+            if (ub_wr_host_valid_in[0] || ub_wr_host_valid_in[1]) begin
+                wr_ptr_base <= wr_ptr_next;
+            end
+            if (ub_wr_ptr_restore_in) begin
+                wr_ptr <= wr_ptr_base;
+            end else begin
+                wr_ptr <= wr_ptr_next;
+            end
 
             // WRITING LOGIC (gradient descent to UB)
             for (int j = SYSTOLIC_ARRAY_WIDTH-1; j >= 0; j--) begin
@@ -661,19 +693,25 @@ module unified_buffer #(
             end
 
             // ============ READING LOGIC (Gradient Descent) ============
-            if (rd_grad_bias_time_counter + 1 < rd_grad_bias_row_size + rd_grad_bias_col_size) begin
-                // Bias: fixed offset (ptr+i), no ptr increment
+            if (rd_grad_bias_time_counter < rd_grad_bias_row_size + rd_grad_bias_col_size) begin
+                // Bias update can be armed before dZ1 returns. Start the fixed wavefront
+                // on the first observed gradient beat, then advance every cycle so late
+                // duplicate valid beats do not corrupt the accumulated bias value.
                 for (int j = 0; j < SYSTOLIC_ARRAY_WIDTH; j++) begin
-                    if(rd_grad_bias_time_counter >= j && rd_grad_bias_time_counter < rd_grad_bias_row_size + j && j < rd_grad_bias_col_size) begin
+                    if(rd_grad_bias_value_phase >= j && rd_grad_bias_value_phase < rd_grad_bias_row_size + j && j < rd_grad_bias_col_size) begin
                         value_old_in[j] <= ub_memory[rd_grad_bias_ptr + j];
                     end else begin
                         value_old_in[j] <= '0;
                     end
                 end
-                rd_grad_bias_time_counter <= rd_grad_bias_time_counter + 1;
-            end else if (rd_grad_bias_time_counter + 1 == rd_grad_bias_row_size + rd_grad_bias_col_size) begin
-                // Bias hold cycle: preserve outputs
-                rd_grad_bias_time_counter <= rd_grad_bias_time_counter + 1;
+                if (!rd_grad_bias_started) begin
+                    if (ub_wr_valid_in[0] || ub_wr_valid_in[1]) begin
+                        rd_grad_bias_started <= 1'b1;
+                        rd_grad_bias_time_counter <= rd_grad_bias_time_counter + 1;
+                    end
+                end else begin
+                    rd_grad_bias_time_counter <= rd_grad_bias_time_counter + 1;
+                end
             end else if (rd_grad_weight_time_counter + 1 < rd_grad_weight_row_size + rd_grad_weight_col_size) begin
                 // Weight: for loop decrements (lane1 first)
                 for (int j = SYSTOLIC_ARRAY_WIDTH-1; j >= 0; j--) begin
@@ -693,6 +731,7 @@ module unified_buffer #(
                 rd_grad_bias_row_size <= 0;
                 rd_grad_bias_col_size <= 0;
                 rd_grad_bias_time_counter <= '0;
+                rd_grad_bias_started <= 1'b0;
                 rd_grad_weight_ptr <= 0;
                 rd_grad_weight_row_size <= 0;
                 rd_grad_weight_col_size <= 0;

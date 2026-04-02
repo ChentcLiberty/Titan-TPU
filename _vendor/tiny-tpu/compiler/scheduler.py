@@ -278,6 +278,20 @@ def build_schedule(spec: dict[str, Any]) -> dict[str, Any]:
     commands.append(
         _ub_read(
             "backward_layer1",
+            "load_old_b1",
+            "B1",
+            5,
+            tensors["B1"]["addr"],
+            batch_size,
+            hidden_dim,
+            False,
+            vpu_path="0001",
+            note="Prime the in-UB B1 update path before the derivative stream starts.",
+        )
+    )
+    commands.append(
+        _ub_read(
+            "backward_layer1",
             "stream_dz2",
             "dZ2",
             0,
@@ -292,20 +306,6 @@ def build_schedule(spec: dict[str, Any]) -> dict[str, Any]:
     commands.append(
         _ub_read(
             "backward_layer1",
-            "load_old_b1",
-            "B1",
-            5,
-            tensors["B1"]["addr"],
-            batch_size,
-            hidden_dim,
-            False,
-            vpu_path="0001",
-            note="Prime the in-UB B1 update path one instruction before dZ1 reaches the VPU output.",
-        )
-    )
-    commands.append(
-        _ub_read(
-            "backward_layer1",
             "stream_h1_for_derivative",
             "H1",
             4,
@@ -315,7 +315,7 @@ def build_schedule(spec: dict[str, Any]) -> dict[str, Any]:
             False,
             vpu_path="0001",
             wait_after=True,
-            note="Derivative path uses the sign of H1 while B1 update is already armed.",
+            note="Start the H1 sign stream immediately after dH1 so the derivative stage sees aligned activations while B1 is already armed.",
         )
     )
     commands.append(

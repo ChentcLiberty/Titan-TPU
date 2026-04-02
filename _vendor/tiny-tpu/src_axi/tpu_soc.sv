@@ -56,6 +56,7 @@ module tpu_soc #(
 
     logic [15:0] ub_wr_host_data_0, ub_wr_host_data_1;
     logic        ub_wr_host_valid_0, ub_wr_host_valid_1;
+    logic        ub_wr_ptr_restore;
     // Bridge scalars to unpacked arrays for tpu.sv ports
     logic [15:0] ub_wr_host_data [0:SYSTOLIC_ARRAY_WIDTH-1];
     logic        ub_wr_host_valid [0:SYSTOLIC_ARRAY_WIDTH-1];
@@ -122,6 +123,7 @@ module tpu_soc #(
         .ub_wr_host_valid_out_0      (ub_wr_host_valid_0),
         .ub_wr_host_data_out_1       (ub_wr_host_data_1),
         .ub_wr_host_valid_out_1      (ub_wr_host_valid_1),
+        .ub_wr_ptr_restore_out       (ub_wr_ptr_restore),
 
         .sys_switch_out              (sys_switch),
         .ub_rd_start_out             (ub_rd_start),
@@ -149,6 +151,7 @@ module tpu_soc #(
 
         .ub_wr_host_data_in         (ub_wr_host_data),
         .ub_wr_host_valid_in        (ub_wr_host_valid),
+        .ub_wr_ptr_restore_in       (ub_wr_ptr_restore),
 
         .ub_rd_start_in             (ub_rd_start),
         .ub_rd_transpose            (ub_rd_transpose),

@@ -68,6 +68,7 @@ module tpu_frontend_axil #(
     output logic        ub_wr_host_valid_out_0,
     output logic [15:0] ub_wr_host_data_out_1,
     output logic        ub_wr_host_valid_out_1,
+    output logic        ub_wr_ptr_restore_out,
 
     // Decoded TPU control signals (from control_unit, to tpu.sv inputs)
     output logic        sys_switch_out,
@@ -85,6 +86,7 @@ module tpu_frontend_axil #(
 
     assign clk_out = s_axil_aclk;
     assign rst_out = ~s_axil_aresetn;
+    assign ub_wr_ptr_restore_out = start_pulse;
 
     // -------------------------------------------------------------------------
     // Staged instruction registers and pulse signals

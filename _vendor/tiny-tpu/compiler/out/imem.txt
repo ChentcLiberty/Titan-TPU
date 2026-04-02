@@ -35,12 +35,12 @@
 [21] 00000000  backward_layer1.nop_w2bwd_load_2  (nop)
 [22] 00000000  backward_layer1.nop_w2bwd_load_3  (nop)
 [23] 00000001  backward_layer1.activate_w2_backward  (control)
-[24] 000828ea  backward_layer1.stream_dz2  (ub_read)
+[24] 000d4882  backward_layer1.load_old_b1  (ub_read)
+       note: Prime the in-UB B1 update path before the derivative stream starts.
+[25] 000828ea  backward_layer1.stream_dz2  (ub_read)
        note: Run the derivative-only VPU path for layer 1 backward propagation.
-[25] 000d4882  backward_layer1.load_old_b1  (ub_read)
-       note: Prime the in-UB B1 update path one instruction before dZ1 reaches the VPU output.
 [26] 008c48aa  backward_layer1.stream_h1_for_derivative  (ub_read)
-       note: Derivative path uses the sign of H1 while B1 update is already armed.
+       note: Start the H1 sign stream immediately after dH1 so the derivative stage sees aligned activations while B1 is already armed.
 # [wait] backward_layer1.wait_dz1_writeback — skipped (handled by sequencer)
 [27] 00014402  update_w1_tile_0.load_x_tile_to_top  (ub_read)
        note: Use the top boundary as one side of the outer-product update tile.

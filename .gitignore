@@ -42,3 +42,24 @@ urgReport/
 __pycache__/
 *.pyc
 *.pyo
+
+# Vendor synthesis/export artifacts
+_vendor/*.mr
+_vendor/*-verilog.pvl
+_vendor/*-verilog.syn
+_vendor/alib-52/
+_vendor/default.svf
+_vendor/tiny-tpu-200m/
+_vendor/tiny-tpu-instruction/
+
+# tiny-tpu local backup/debug artifacts
+_vendor/tiny-tpu/**/*.bak
+_vendor/tiny-tpu/**/*.bak_*
+_vendor/tiny-tpu/compiler/out/*.bak_*
+_vendor/tiny-tpu/compiler/__pycache__/
+_vendor/tiny-tpu/sim_build_vcs/
+_vendor/tiny-tpu/vfastLog/
+_vendor/tiny-tpu/waveforms/*.fst
+_vendor/tiny-tpu/waveforms/vcd2fsdbLog/
+_vendor/tiny-tpu/resume_test.pdf
+_vendor/tiny-tpu/resume_test.png
