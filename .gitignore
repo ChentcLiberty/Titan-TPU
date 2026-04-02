@@ -83,3 +83,5 @@ sim/vcs/vc_hdrs.h
 docs/05_interview/*.pdf
 docs/05_interview/*.png
 _vendor/tiny-tpu_timing_opt_20260328/
+_vendor/tiny-tpu/debug/
+_vendor/tiny-tpu/简历目录/
