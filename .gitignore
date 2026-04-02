@@ -80,3 +80,6 @@ syn/logs/
 syn/outputs/
 syn/reports/
 sim/vcs/vc_hdrs.h
+docs/05_interview/*.pdf
+docs/05_interview/*.png
+_vendor/tiny-tpu_timing_opt_20260328/

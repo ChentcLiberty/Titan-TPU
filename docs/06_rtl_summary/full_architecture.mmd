@@ -1,0 +1,153 @@
+graph TB
+    subgraph TOP["TPU Top Module"]
+        direction TB
+
+        subgraph HOST["Host Interface Signals"]
+            H1["clk / rst"]
+            H2["ub_wr_host_data_in[0:1]<br/>ub_wr_host_valid_in[0:1]"]
+            H3["ub_rd_start_in<br/>ub_rd_transpose<br/>ub_ptr_select[8:0]<br/>ub_rd_addr_in[15:0]<br/>ub_rd_row_size[15:0]<br/>ub_rd_col_size[15:0]"]
+            H4["learning_rate_in[15:0]<br/>vpu_data_pathway[3:0]<br/>sys_switch_in<br/>vpu_leak_factor_in[15:0]<br/>inv_batch_size_times_two_in[15:0]"]
+        end
+
+        subgraph UB["Unified Buffer Module"]
+            direction TB
+            UB_MEM["Memory Array<br/>ub_memory[0:127]<br/>16-bit x 128"]
+
+            subgraph UB_RD["Read Scheduler"]
+                RD1["Input Read<br/>ptr/row/col/counter"]
+                RD2["Weight Read<br/>ptr/row/col/counter"]
+                RD3["Bias Read<br/>ptr/row/col/counter"]
+                RD4["Y Read<br/>ptr/row/col/counter"]
+                RD5["H Read<br/>ptr/row/col/counter"]
+                RD6["Grad Bias Read<br/>ptr/row/col/counter"]
+                RD7["Grad Weight Read<br/>ptr/row/col/counter"]
+            end
+
+            subgraph GD_MOD["Gradient Descent x2"]
+                GD1["gradient_descent[0]<br/>lr_in, grad_in<br/>value_old_in<br/>value_updated_out"]
+                GD2["gradient_descent[1]<br/>lr_in, grad_in<br/>value_old_in<br/>value_updated_out"]
+            end
+        end
+
+        subgraph SYS["Systolic Array 2x2"]
+            direction TB
+
+            subgraph PE_ROW1["Row 1"]
+                PE11["PE(1,1)<br/>━━━━━━━━<br/>input_in[15:0]<br/>weight_in[15:0]<br/>psum_in[15:0]<br/>accept_w, switch<br/>━━━━━━━━<br/>input_out →<br/>psum_out ↓<br/>weight_out ↓<br/>valid_out"]
+                PE12["PE(1,2)<br/>━━━━━━━━<br/>input_in[15:0]<br/>weight_in[15:0]<br/>psum_in[15:0]<br/>accept_w, switch<br/>━━━━━━━━<br/>psum_out ↓<br/>weight_out ↓<br/>valid_out"]
+            end
+
+            subgraph PE_ROW2["Row 2"]
+                PE21["PE(2,1)<br/>━━━━━━━━<br/>input_in[15:0]<br/>weight_in[15:0]<br/>psum_in[15:0]<br/>accept_w, switch<br/>━━━━━━━━<br/>input_out →<br/>psum_out<br/>valid_out"]
+                PE22["PE(2,2)<br/>━━━━━━━━<br/>input_in[15:0]<br/>weight_in[15:0]<br/>psum_in[15:0]<br/>accept_w, switch<br/>━━━━━━━━<br/>psum_out<br/>valid_out"]
+            end
+
+            subgraph PE_INTERNAL["PE Internal Structure"]
+                PE_BUF["Weight Buffers<br/>━━━━━━━━<br/>weight_active[15:0]<br/>weight_shadow[15:0]<br/>switch signal"]
+                PE_MAC["MAC Unit<br/>━━━━━━━━<br/>psum = psum + input × weight<br/>Q8.8 fixed-point"]
+                PE_REG["Pipeline Registers<br/>━━━━━━━━<br/>input_reg<br/>psum_reg<br/>valid_reg"]
+            end
+        end
+
+        subgraph VPU_TOP["VPU Vector Processing Unit"]
+            direction TB
+
+            subgraph BIAS_MOD["Bias Module"]
+                BIAS_P["bias_parent<br/>━━━━━━━━<br/>Inputs:<br/>sys_data_in_1/2[15:0]<br/>sys_valid_in_1/2<br/>bias_scalar_in_1/2[15:0]<br/>━━━━━━━━<br/>Outputs:<br/>Z_data_out_1/2[15:0]<br/>Z_valid_out_1/2"]
+                BIAS_C1["bias_child[0]<br/>Z = X + bias"]
+                BIAS_C2["bias_child[1]<br/>Z = X + bias"]
+            end
+
+            subgraph LR_MOD["Leaky ReLU Module"]
+                LR_P["leaky_relu_parent<br/>━━━━━━━━<br/>Inputs:<br/>data_1/2[15:0]<br/>valid_1/2<br/>leak_factor_in[15:0]<br/>━━━━━━━━<br/>Outputs:<br/>data_out_1/2[15:0]<br/>valid_out_1/2"]
+                LR_C1["leaky_relu_child[0]<br/>H = Z if Z>0<br/>H = Z×α if Z≤0"]
+                LR_C2["leaky_relu_child[1]<br/>H = Z if Z>0<br/>H = Z×α if Z≤0"]
+            end
+
+            subgraph LOSS_MOD["Loss Derivative Module"]
+                LOSS_P["loss_parent<br/>━━━━━━━━<br/>Inputs:<br/>H_1/2[15:0]<br/>valid_1/2<br/>Y_1/2[15:0]<br/>inv_batch_size_times_two[15:0]<br/>━━━━━━━━<br/>Outputs:<br/>gradient_1/2[15:0]<br/>valid_out_1/2"]
+                LOSS_C1["loss_child[0]<br/>dL/dH = (H-Y)/(2N)"]
+                LOSS_C2["loss_child[1]<br/>dL/dH = (H-Y)/(2N)"]
+            end
+
+            subgraph LRD_MOD["Leaky ReLU Derivative Module"]
+                LRD_P["leaky_relu_derivative_parent<br/>━━━━━━━━<br/>Inputs:<br/>data_1/2[15:0]<br/>valid_1/2<br/>H_1/2[15:0]<br/>leak_factor_in[15:0]<br/>━━━━━━━━<br/>Outputs:<br/>data_out_1/2[15:0]<br/>valid_out_1/2"]
+                LRD_C1["leaky_relu_derivative_child[0]<br/>dL/dZ = dL/dH × 1 if H>0<br/>dL/dZ = dL/dH × α if H≤0"]
+                LRD_C2["leaky_relu_derivative_child[1]<br/>dL/dZ = dL/dH × 1 if H>0<br/>dL/dZ = dL/dH × α if H≤0"]
+            end
+
+            VPU_MUX["VPU Pathway Mux<br/>━━━━━━━━<br/>vpu_data_pathway[3:0]<br/>bit3: bias enable<br/>bit2: leaky_relu enable<br/>bit1: loss enable<br/>bit0: leaky_relu_deriv enable"]
+        end
+    end
+
+    subgraph CONTROL["Control Unit (External)"]
+        CU["control_unit<br/>━━━━━━━━<br/>Input: instruction[87:0]<br/>━━━━━━━━<br/>Outputs:<br/>sys_switch_in<br/>ub_rd_start_in<br/>ub_rd_transpose<br/>ub_wr_host_valid_in_1/2<br/>ub_rd_col_size[1:0]<br/>ub_rd_row_size[7:0]<br/>ub_rd_addr_in[1:0]<br/>ub_ptr_sel[2:0]<br/>ub_wr_host_data_in_1/2[15:0]<br/>vpu_data_pathway[3:0]<br/>inv_batch_size_times_two_in[15:0]<br/>vpu_leak_factor_in[15:0]"]
+    end
+
+    %% Data Flow Connections
+    H2 --> UB_MEM
+    UB_MEM --> UB_RD
+
+    UB_RD --> RD1 --> PE11
+    UB_RD --> RD1 --> PE21
+    UB_RD --> RD2 --> PE11
+    UB_RD --> RD2 --> PE12
+
+    PE11 --> PE12
+    PE11 --> PE21
+    PE12 --> PE22
+    PE21 --> PE22
+
+    PE21 --> BIAS_P
+    PE22 --> BIAS_P
+    BIAS_P --> BIAS_C1
+    BIAS_P --> BIAS_C2
+
+    BIAS_C1 --> LR_P
+    BIAS_C2 --> LR_P
+    LR_P --> LR_C1
+    LR_P --> LR_C2
+
+    LR_C1 --> LOSS_P
+    LR_C2 --> LOSS_P
+    LOSS_P --> LOSS_C1
+    LOSS_P --> LOSS_C2
+
+    LOSS_C1 --> LRD_P
+    LOSS_C2 --> LRD_P
+    LRD_P --> LRD_C1
+    LRD_P --> LRD_C2
+
+    LRD_C1 --> UB_MEM
+    LRD_C2 --> UB_MEM
+
+    UB_RD --> RD3 --> BIAS_P
+    UB_RD --> RD4 --> LOSS_P
+    UB_RD --> RD5 --> LRD_P
+
+    UB_RD --> RD6 --> GD1
+    UB_RD --> RD7 --> GD2
+    UB_MEM --> GD1
+    UB_MEM --> GD2
+    GD1 --> UB_MEM
+    GD2 --> UB_MEM
+
+    PE_BUF --> PE_MAC
+    PE_MAC --> PE_REG
+
+    %% Control Flow
+    H3 -.-> UB_RD
+    H4 -.-> VPU_MUX
+    H4 -.-> GD_MOD
+    H4 -.-> PE11
+
+    CU -.-> H2
+    CU -.-> H3
+    CU -.-> H4
+
+    style TOP fill:#f9f9f9,stroke:#333,stroke-width:3px
+    style UB fill:#e6f3ff,stroke:#4a90d9,stroke-width:2px
+    style SYS fill:#fff3e6,stroke:#d9904a,stroke-width:2px
+    style VPU_TOP fill:#e6ffe6,stroke:#4ad94a,stroke-width:2px
+    style CONTROL fill:#ffe6e6,stroke:#d94a4a,stroke-width:2px
+    style PE_INTERNAL fill:#fff9e6,stroke:#d9c44a,stroke-width:1px

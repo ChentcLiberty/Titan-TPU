@@ -1,0 +1,76 @@
+graph TB
+    subgraph HOST["Host Interface"]
+        H_WR["Host Write\n(data + valid)"]
+        H_CMD["Host Read Command\n(start, addr, size, transpose, ptr_select)"]
+        H_CTRL["Host Control\n(sys_switch, vpu_pathway,\nlearning_rate, leak_factor,\ninv_batch_size)"]
+    end
+
+    subgraph TPU["tpu Top-Level"]
+        subgraph UB["unified_buffer ub_inst"]
+            UB_MEM["ub_memory\n128 x 16-bit"]
+            UB_RD["Read Scheduler\n7 independent read pointers"]
+            GD["gradient_descent x2\nweight/bias update"]
+        end
+
+        subgraph SYS["systolic systolic_inst"]
+            PE11["PE 1,1"]
+            PE12["PE 1,2"]
+            PE21["PE 2,1"]
+            PE22["PE 2,2"]
+        end
+
+        subgraph VPU["vpu vpu_inst"]
+            BIAS["bias_parent"]
+            LR["leaky_relu_parent"]
+            LOSS["loss_parent"]
+            LRD["leaky_relu_derivative_parent"]
+        end
+    end
+
+    H_WR -->|"wr_host_data 16x2\nwr_host_valid 2"| UB_MEM
+
+    UB_RD -->|"input_data 16x2\ninput_valid 2"| PE11
+    UB_RD -->|"input_data 16x2"| PE21
+    UB_RD -->|"weight_data 16x2\nweight_valid 2"| PE11
+    UB_RD -->|"weight_data 16x2"| PE12
+
+    PE11 -->|"input_out"| PE12
+    PE11 -->|"psum_out"| PE21
+    PE12 -->|"psum_out"| PE22
+    PE21 -->|"input_out"| PE22
+
+    PE21 -->|"sys_data_out_21"| BIAS
+    PE22 -->|"sys_data_out_22"| BIAS
+
+    BIAS -->|"Z_out 16x2"| LR
+    LR -->|"H_out 16x2"| LOSS
+    LOSS -->|"gradient 16x2"| LRD
+    LRD -->|"vpu_data_out 16x2"| UB_MEM
+
+    UB_RD -->|"bias_data 16x2"| BIAS
+    UB_RD -->|"Y_data 16x2"| LOSS
+    UB_RD -->|"H_data 16x2"| LRD
+
+    UB_MEM -->|"value_old 16x2"| GD
+    GD -->|"value_updated 16x2"| UB_MEM
+
+    H_CMD -.->|"rd_start, ptr_select 9\naddr 16, row/col_size 16"| UB_RD
+    H_CTRL -.->|"sys_switch_in"| PE11
+    H_CTRL -.->|"vpu_data_pathway 4"| VPU
+    H_CTRL -.->|"learning_rate 16"| GD
+    H_CTRL -.->|"leak_factor 16"| LR
+    H_CTRL -.->|"leak_factor 16"| LRD
+    H_CTRL -.->|"inv_batch_size_x2 16"| LOSS
+    UB_RD -.->|"col_size_out 16\ncol_size_valid"| SYS
+
+    PE11 -.->|"switch_out"| PE12
+    PE11 -.->|"switch_out"| PE21
+    PE12 -.->|"switch_out"| PE22
+    PE11 -.->|"valid_out"| PE12
+    PE11 -.->|"valid_out"| PE21
+    PE12 -.->|"valid_out"| PE22
+
+    style HOST fill:#f0f0f0,stroke:#999
+    style UB fill:#e6f3ff,stroke:#4a90d9
+    style SYS fill:#fff3e6,stroke:#d9904a
+    style VPU fill:#e6ffe6,stroke:#4ad94a
