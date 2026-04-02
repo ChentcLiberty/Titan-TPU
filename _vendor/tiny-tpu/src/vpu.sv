@@ -332,8 +332,6 @@ module vpu (
     // sequential logic to cache last H???
     always @(posedge clk or posedge rst) begin
         if (rst) begin
-            last_H_data_1_in <= 0;
-            last_H_data_2_in <= 0;
             last_H_data_1_out <= 0;
             last_H_data_2_out <= 0;
         end else begin

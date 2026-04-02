@@ -27,47 +27,45 @@ module tpu #(
 
     input logic sys_switch_in,
     input logic [15:0] vpu_leak_factor_in,
-    input logic [15:0] inv_batch_size_times_two_in
+    input logic [15:0] inv_batch_size_times_two_in,
+
+    // VPU outputs (data writeback)
+    output logic [15:0] vpu_data_out_1,
+    output logic [15:0] vpu_data_out_2,
+    output logic vpu_valid_out_1,
+    output logic vpu_valid_out_2,
+
+    // Systolic array outputs
+    output logic [15:0] sys_data_out_21,
+    output logic [15:0] sys_data_out_22,
+    output logic sys_valid_out_21,
+    output logic sys_valid_out_22,
+
+    // UB read data outputs (input/weight/bias)
+    output logic [15:0] ub_rd_input_data_out_0,
+    output logic [15:0] ub_rd_input_data_out_1,
+    output logic ub_rd_input_valid_out_0,
+    output logic ub_rd_input_valid_out_1,
+    output logic [15:0] ub_rd_weight_data_out_0,
+    output logic [15:0] ub_rd_weight_data_out_1,
+    output logic ub_rd_weight_valid_out_0,
+    output logic ub_rd_weight_valid_out_1
 );
-    // UB internal output wires
+    // UB internal wires (VPU writeback to UB)
     logic [15:0] ub_wr_data_in [0:SYSTOLIC_ARRAY_WIDTH-1];
     logic ub_wr_valid_in [0:SYSTOLIC_ARRAY_WIDTH-1];
 
-    // Number of columns in the matrix to send to systolic array to disable columns of PEs
+    // Number of columns in the matrix to send to systolic array
     logic [15:0] ub_rd_col_size_out;
     logic ub_rd_col_size_valid_out;
-    
-    // Array wires for connection to unified_buffer
-    logic [15:0] ub_rd_input_data_out_0;
-    logic [15:0] ub_rd_input_data_out_1;
-    logic ub_rd_input_valid_out_0;
-    logic ub_rd_input_valid_out_1;
 
-    logic [15:0] ub_rd_weight_data_out_0;
-    logic [15:0] ub_rd_weight_data_out_1;
-    logic ub_rd_weight_valid_out_0;
-    logic ub_rd_weight_valid_out_1;
-
+    // UB read data outputs (bias/Y/H for VPU)
     logic [15:0] ub_rd_bias_data_out_0;
     logic [15:0] ub_rd_bias_data_out_1;
-    
     logic [15:0] ub_rd_Y_data_out_0;
     logic [15:0] ub_rd_Y_data_out_1;
-
     logic [15:0] ub_rd_H_data_out_0;
     logic [15:0] ub_rd_H_data_out_1;
-
-    // Systolic array internal output wires
-    logic [15:0] sys_data_out_21;
-    logic [15:0] sys_data_out_22;
-    logic sys_valid_out_21;
-    logic sys_valid_out_22;
-
-    // VPU internal output wires
-    logic [15:0] vpu_data_out_1;
-    logic [15:0] vpu_data_out_2;
-    logic vpu_valid_out_1;
-    logic vpu_valid_out_2;
 
     assign ub_wr_data_in[0] = vpu_data_out_1;
     assign ub_wr_data_in[1] = vpu_data_out_2;

@@ -1,5 +1,5 @@
 #================DO NOT MODIFY BELOW===================== Compiler and simulator settings
-IVERILOG = iverilog
+IVERILOG = iverilog -DSIMULATION
 VVP = vvp
 COCOTB_PREFIX = $(shell cocotb-config --prefix)
 
@@ -15,23 +15,31 @@ export LIBPYTHON_LOC=$(shell cocotb-config --libpython)
 export PYTHONPATH := test:$(PYTHONPATH)
 
 #=============== MODIFY BELOW ======================
-# ********** IF YOU HAVE A NEW VERILOG FILE, ADD IT TO THE SOURCES VARIABLE
-SOURCES = src/pe.sv \
-          src/leaky_relu_child.sv \
-          src/leaky_relu_parent.sv \
-          src/leaky_relu_derivative_child.sv \
-          src/leaky_relu_derivative_parent.sv \
-          src/systolic.sv \
-          src/bias_child.sv \
-          src/bias_parent.sv \
-          src/fixedpoint.sv \
-          src/control_unit.sv \
-          src/unified_buffer_fixed.sv \
-          src/vpu.sv \
-          src/loss_parent.sv \
-		  src/loss_child.sv \
-		  src/tpu.sv \
-		  src/gradient_descent.sv
+# RTL source selection:
+# - All active flows use the tracked src/ versions.
+# - Unified Buffer has multiple historical bug-fix branches; default to the latest v3.
+COMMON_SOURCES = src/pe.sv \
+                 src/leaky_relu_child.sv \
+                 src/leaky_relu_parent.sv \
+                 src/leaky_relu_derivative_child.sv \
+                 src/leaky_relu_derivative_parent.sv \
+                 src/systolic.sv \
+                 src/bias_child.sv \
+                 src/bias_parent.sv \
+                 src/fixedpoint.sv \
+                 src/control_unit.sv \
+                 src/vpu.sv \
+                 src/loss_parent.sv \
+		         src/loss_child.sv \
+		         src/tpu.sv \
+		         src/gradient_descent.sv
+
+UNIFIED_BUFFER_FIXED_SRC = src/unified_buffer_fixed.sv
+UNIFIED_BUFFER_V2_SRC = src/unified_buffer_v2.sv
+UNIFIED_BUFFER_V3_SRC = src/unified_buffer_v3.sv
+
+UNIFIED_BUFFER_SRC ?= $(UNIFIED_BUFFER_V3_SRC)
+SOURCES = $(COMMON_SOURCES) $(UNIFIED_BUFFER_SRC)
 
 # MODIFY 1) variable next to -s 
 # MODIFY 2) variable next to $(SOURCES)
@@ -112,9 +120,9 @@ test_unified_buffer: $(SIM_BUILD_DIR)
 	! grep failure results.xml
 	mv unified_buffer.vcd waveforms/ 2>/dev/null || true
 
-SOURCES_UB_FIXED = $(subst src/unified_buffer.sv,src/unified_buffer_fixed.sv,$(SOURCES))
-SOURCES_UB_V2 = $(subst src/unified_buffer.sv,src/unified_buffer_v2.sv,$(SOURCES))
-SOURCES_UB_V3 = $(subst src/unified_buffer.sv,src/unified_buffer_v3.sv,$(SOURCES))
+SOURCES_UB_FIXED = $(COMMON_SOURCES) $(UNIFIED_BUFFER_FIXED_SRC)
+SOURCES_UB_V2 = $(COMMON_SOURCES) $(UNIFIED_BUFFER_V2_SRC)
+SOURCES_UB_V3 = $(COMMON_SOURCES) $(UNIFIED_BUFFER_V3_SRC)
 
 test_ub_verify: $(SIM_BUILD_DIR)
 	$(IVERILOG) -o $(SIM_VVP) -s unified_buffer -s dump -g2012 $(SOURCES_UB_FIXED) test/dump_unified_buffer.sv
@@ -129,7 +137,8 @@ test_ub_v2_verify: $(SIM_BUILD_DIR)
 	mv unified_buffer.vcd waveforms/unified_buffer_v2.vcd 2>/dev/null || true
 
 test_ub_v3_verify: $(SIM_BUILD_DIR)
-	$(IVERILOG) -o $(SIM_VVP) -s unified_buffer -s dump -g2012 -DSIMULATION $(SOURCES_UB_V3) test/dump_unified_buffer.sv
+	$(IVERILOG) -o $(SIM_VVP) -s unified_buffer -s dump -g2012 $(SOURCES_UB_V3) test/dump_unified_buffer.sv
+	# v3 reuses the v2 verification suite because it is a synthesis-clean superset of v2 fixes.
 	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_ub_v2_verification $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
 	! grep failure results.xml
 	mv unified_buffer.vcd waveforms/unified_buffer_v3.vcd 2>/dev/null || true
@@ -244,6 +253,31 @@ test_tpu_verify: $(SIM_BUILD_DIR)
 	mv tpu.vcd waveforms/ 2>/dev/null || true
 
 verify_all: test_bias_parent_verify test_leaky_relu_parent_verify test_leaky_relu_derivative_parent_verify test_loss_parent_verify test_vpu_verify test_tpu_verify
+
+AXI_E2E_SOURCES = src_axi/fixedpoint.sv \
+                  src_axi/pe.sv \
+                  src_axi/leaky_relu_child.sv \
+                  src_axi/leaky_relu_parent.sv \
+                  src_axi/leaky_relu_derivative_child.sv \
+                  src_axi/leaky_relu_derivative_parent.sv \
+                  src_axi/systolic.sv \
+                  src_axi/bias_child.sv \
+                  src_axi/bias_parent.sv \
+                  src_axi/control_unit.sv \
+                  src_axi/vpu.sv \
+                  src_axi/loss_parent.sv \
+                  src_axi/loss_child.sv \
+                  src_axi/gradient_descent.sv \
+                  src_axi/unified_buffer_v3.sv \
+                  src_axi/tpu.sv \
+                  src_axi/tpu_frontend_axil.sv \
+                  src_axi/tpu_soc.sv
+
+test_tpu_soc_axil_e2e: $(SIM_BUILD_DIR)
+	$(IVERILOG) -o $(SIM_VVP) -s tpu_soc_top -s dump -g2012 $(AXI_E2E_SOURCES) test/dump_tpu_soc.sv
+	PYTHONOPTIMIZE=$(NOASSERT) MODULE=test_tpu_soc_axil_e2e $(VVP) -M $(COCOTB_LIBS) -m libcocotbvpi_icarus $(SIM_VVP)
+	! grep failure results.xml
+	mv tpu_soc.vcd waveforms/ 2>/dev/null || true
 
 
 # ============ DO NOT MODIFY BELOW THIS LINE ==============

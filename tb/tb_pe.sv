@@ -200,9 +200,6 @@ module tb_pe;
     task automatic reset_dut();
         $display("[%0t] 🔄 复位 DUT", $time);
 
-        // 复位信号直接驱动（不通过 clocking block）
-        rst = 1;
-
         // 其他信号通过 clocking block 驱动
         cb.pe_enabled <= 0;
         cb.pe_valid_in <= 0;
@@ -212,10 +209,15 @@ module tb_pe;
         cb.pe_weight_in <= 16'h0000;
         cb.pe_psum_in <= 16'h0000;
 
+        // 等待1个时钟周期后再拉高复位
+        @(cb);
+        rst = 1;
+
         // 等待3个时钟周期
         repeat(3) @(cb);
 
-        // 释放复位
+        // 释放复位（延迟一拍）
+        @(cb);
         rst = 0;
         cb.pe_enabled <= 1;
 

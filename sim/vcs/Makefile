@@ -42,8 +42,6 @@ VCS_BASE_FLAGS = \
 VCS_DEBUG_FLAGS = \
 	-debug_access+all \
 	-kdb \
-	+vcs+fsdbon \
-	+fsdb+autoflush \
 	-P ${VERDI_HOME}/share/PLI/VCS/LINUX64/novas.tab \
 	${VERDI_HOME}/share/PLI/VCS/LINUX64/pli.a
 
@@ -65,10 +63,9 @@ VCS_WARN_FLAGS = \
 # 组合所有选项
 VCS_FLAGS = $(VCS_BASE_FLAGS) $(VCS_DEBUG_FLAGS) $(VCS_WARN_FLAGS)
 
-# 仿真选项
+# 仿真选项（不指定波形文件名，让testbench自己决定）
 SIM_FLAGS = \
-	-l $(LOG_DIR)/sim.log \
-	+fsdbfile+../../waveforms/tb_pe.fsdb
+	-l $(LOG_DIR)/sim.log
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 源文件列表
@@ -77,6 +74,7 @@ FXP_SRC      = $(SRC_DIR)/fixedpoint.sv
 PE_SRC       = $(SRC_DIR)/pe.sv
 SYSTOLIC_SRC = $(SRC_DIR)/systolic.sv
 VPU_SRC      = $(SRC_DIR)/vpu.sv
+GRAD_SRC     = $(SRC_DIR)/gradient_descent.sv
 BUFFER_SRC   = $(SRC_DIR)/unified_buffer.sv
 CTRL_SRC     = $(SRC_DIR)/control_unit.sv
 TPU_SRC      = $(SRC_DIR)/tpu.sv
@@ -85,7 +83,7 @@ TPU_SRC      = $(SRC_DIR)/tpu.sv
 # 目标定义
 # ═══════════════════════════════════════════════════════════════════════════════
 
-.PHONY: all clean help dirs pe systolic check verdi cov regression report
+.PHONY: all clean help dirs pe systolic buffer check verdi cov regression report
 
 # 默认目标
 all: help
@@ -138,6 +136,47 @@ systolic: dirs
 	@echo "✅ Systolic Array 测试完成!"
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Gradient Descent 测试
+# ═══════════════════════════════════════════════════════════════════════════════
+grad: dirs
+	@echo "═══════════════════════════════════════════════════════════════════"
+	@echo "🔧 编译 Gradient Descent"
+	@echo "═══════════════════════════════════════════════════════════════════"
+	$(VCS) $(VCS_FLAGS) \
+		-o $(BUILD_DIR)/grad_simv \
+		-l $(LOG_DIR)/grad_compile.log \
+		$(FXP_SRC) \
+		$(GRAD_SRC) \
+		$(TB_DIR)/tb_gradient_descent.sv
+	@echo ""
+	@echo "🚀 运行仿真..."
+	@echo "═══════════════════════════════════════════════════════════════════"
+	cd $(BUILD_DIR) && ./grad_simv $(SIM_FLAGS)
+	@echo ""
+	@echo "✅ Gradient Descent 测试完成!"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Unified Buffer 测试
+# ═══════════════════════════════════════════════════════════════════════════════
+buffer: dirs
+	@echo "═══════════════════════════════════════════════════════════════════"
+	@echo "🔧 编译 Unified Buffer"
+	@echo "═══════════════════════════════════════════════════════════════════"
+	$(VCS) $(VCS_FLAGS) \
+		-o $(BUILD_DIR)/buffer_simv \
+		-l $(LOG_DIR)/buffer_compile.log \
+		$(FXP_SRC) \
+		$(GRAD_SRC) \
+		$(BUFFER_SRC) \
+		$(TB_DIR)/tb_unified_buffer.sv
+	@echo ""
+	@echo "🚀 运行仿真..."
+	@echo "═══════════════════════════════════════════════════════════════════"
+	cd $(BUILD_DIR) && ./buffer_simv $(SIM_FLAGS)
+	@echo ""
+	@echo "✅ Unified Buffer 测试完成!"
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # 语法检查（快速检查，不生成可执行文件）
 # ═══════════════════════════════════════════════════════════════════════════════
 check: dirs
@@ -154,8 +193,8 @@ check: dirs
 # ═══════════════════════════════════════════════════════════════════════════════
 verdi:
 	@if ls $(WAVE_DIR)/*.fsdb 1> /dev/null 2>&1; then \
-		echo "🔍 打开 Verdi（大字体模式）..."; \
-		./verdi_large_font.sh -ssf $(WAVE_DIR)/*.fsdb -nologo & \
+		echo "🔍 打开 Verdi..."; \
+		$(VERDI) -ssf $(WAVE_DIR)/*.fsdb -nologo & \
 	else \
 		echo "❌ 未找到波形文件: $(WAVE_DIR)/*.fsdb"; \
 		echo "💡 请先运行: make pe"; \
@@ -275,6 +314,7 @@ help:
 	@echo "📋 基础命令:"
 	@echo "  make pe         - PE 模块测试（生成 FSDB 波形）"
 	@echo "  make systolic   - Systolic Array 测试"
+	@echo "  make buffer     - Unified Buffer 测试"
 	@echo "  make check      - 快速语法检查"
 	@echo "  make verdi      - 打开 Verdi 查看波形"
 	@echo "  make clean      - 清理所有编译产物"

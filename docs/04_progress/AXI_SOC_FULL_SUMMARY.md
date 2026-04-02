@@ -261,4 +261,3 @@ if (rd_bias_time_counter >= j+1 && ...)  // +1 补偿 col2 的天然延迟
 4. **增加 VCS 仿真支持**：当前 e2e 只在 Icarus 跑通，Icarus 有多处 unpacked array 的局限性
 5. **指令编码扩展**：当前 32-bit 格式有 8 bit reserved，可用于 stride、mask 等功能
 
-**现象**：stream_b1 的 vpu_pathway=0000，H1 经过 VPU
