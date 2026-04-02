@@ -61,3 +61,7 @@ compiler/out/*.bak_*
 # Local one-off exports
 resume_test.pdf
 resume_test.png
+
+# Experiment outputs
+experiments/out/
+experiments/syn/out/

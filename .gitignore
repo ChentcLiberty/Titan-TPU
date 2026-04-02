@@ -67,3 +67,4 @@ _vendor/tiny-tpu/resume_test.png
 # Local backup files
 *.bak
 *.bak_*
+.gitignore.bak_*

@@ -1,0 +1,15 @@
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/unified_buffer_v3.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/gradient_descent.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/tpu.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/fixedpoint.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/pe.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/systolic.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/bias_child.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/bias_parent.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/leaky_relu_child.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/leaky_relu_parent.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/leaky_relu_derivative_child.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/leaky_relu_derivative_parent.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/loss_child.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/loss_parent.sv
+/home/jjt/TitanTPU/_vendor/tiny-tpu/src/vpu.sv
