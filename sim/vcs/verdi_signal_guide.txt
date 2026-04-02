@@ -1,0 +1,99 @@
+================================================================================
+Unified Buffer 仿真 - 关键信号查看指南
+================================================================================
+
+打开 Verdi 命令：
+cd /home/jjt/TitanTPU/sim/vcs
+verdi -ssf ../waveforms/tb_unified_buffer.fsdb -nologo &
+
+================================================================================
+在 Verdi 左侧 Instance Tree 中按以下顺序添加信号到波形窗口：
+================================================================================
+
+【基础信号】
+  tb_unified_buffer/clk
+  tb_unified_buffer/rst
+  tb_unified_buffer/test_count
+  tb_unified_buffer/pass_count
+  tb_unified_buffer/fail_count
+
+【Host 写入通路 - 所有测试都会用到】
+  tb_unified_buffer/ub_wr_host_data_in[0]
+  tb_unified_buffer/ub_wr_host_data_in[1]
+  tb_unified_buffer/ub_wr_host_valid_in[0]
+  tb_unified_buffer/ub_wr_host_valid_in[1]
+
+【读取控制命令】
+  tb_unified_buffer/ub_rd_start_in
+  tb_unified_buffer/ub_ptr_select          （0=输入, 1=权重）
+  tb_unified_buffer/ub_rd_addr_in
+  tb_unified_buffer/ub_rd_row_size
+  tb_unified_buffer/ub_rd_col_size
+  tb_unified_buffer/ub_rd_transpose
+
+【内存数组 - 最重要！查看数据是否正确存储】
+  tb_unified_buffer/dut/ub_memory[0]
+  tb_unified_buffer/dut/ub_memory[1]
+  tb_unified_buffer/dut/ub_memory[2]
+  tb_unified_buffer/dut/ub_memory[3]
+  tb_unified_buffer/dut/wr_ptr
+
+【Test 1 重点：权重读取输出】
+  tb_unified_buffer/ub_rd_weight_data_out_0
+  tb_unified_buffer/ub_rd_weight_data_out_1
+  tb_unified_buffer/ub_rd_weight_valid_out_0
+  tb_unified_buffer/ub_rd_weight_valid_out_1
+
+【Test 2 & 3 重点：输入读取输出】
+  tb_unified_buffer/ub_rd_input_data_out_0
+  tb_unified_buffer/ub_rd_input_data_out_1
+  tb_unified_buffer/ub_rd_input_valid_out_0
+  tb_unified_buffer/ub_rd_input_valid_out_1
+
+【DUT 内部 - 输入读取状态机】
+  tb_unified_buffer/dut/rd_input_ptr
+  tb_unified_buffer/dut/rd_input_time_counter
+  tb_unified_buffer/dut/rd_input_row_size
+  tb_unified_buffer/dut/rd_input_col_size
+
+【DUT 内部 - 权重读取状态机】
+  tb_unified_buffer/dut/rd_weight_ptr
+  tb_unified_buffer/dut/rd_weight_time_counter
+  tb_unified_buffer/dut/rd_weight_row_size
+  tb_unified_buffer/dut/rd_weight_col_size
+  tb_unified_buffer/dut/rd_weight_skip_size
+
+================================================================================
+验证要点
+================================================================================
+
+Test 1 - 权重读写（大约 0-200ns）：
+  1. 检查 ub_wr_host_valid_in 拉高时间
+  2. 确认 memory[0:3] = 0x0100, 0x0200, 0x0300, 0x0400
+  3. 查看 ub_rd_weight_data_out_0/1 在 3 个周期的输出：
+     T0: W0=0x0300, W1=0x0000
+     T1: W0=0x0100, W1=0x0400
+     T2: W0=0x0000, W1=0x0200
+
+Test 2 - 输入数据读写（大约 250-450ns）：
+  1. 确认 memory[0:3] = 0x1000, 0x2000, 0x3000, 0x4000
+  2. 查看 ub_rd_input_data_out_0/1 在 3 个周期的输出：
+     T0: IN0=0x1000, IN1=0x0000
+     T1: IN0=0x3000, IN1=0x2000
+     T2: IN0=0x0000, IN1=0x4000
+
+Test 3 - 行主序验证（大约 500-700ns）：
+  1. 确认 memory[0:3] = 0xAA00, 0xAA01, 0xAA10, 0xAA11
+  2. 验证读取顺序与 Test 2 相同
+
+================================================================================
+快捷操作
+================================================================================
+
+1. 添加信号：选中信号 → 按键盘 'a' 或右键 "Add to Waveform"
+2. 设置十六进制显示：选中信号 → 右键 → Radix → Hexadecimal
+3. 添加标记：在时间轴右键 → Add Marker
+4. 缩放：鼠标滚轮 或 Ctrl+拖动
+5. 查找信号：Ctrl+F
+
+================================================================================

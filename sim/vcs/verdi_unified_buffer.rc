@@ -1,0 +1,181 @@
+# ==============================================================================
+# Verdi Signal List for Unified Buffer Testbench
+# Author: Generated from tb_unified_buffer.sv and unified_buffer.sv
+# Date: 2026-02-04
+# ==============================================================================
+
+# Create waveform window
+wvCreateWindow
+
+# ==============================================================================
+# Group 1: Clock & Reset
+# ==============================================================================
+wvAddGroup "1. Clock & Reset"
+wvAddSignal -win $_nWave2 tb_unified_buffer/clk
+wvAddSignal -win $_nWave2 tb_unified_buffer/rst
+
+# ==============================================================================
+# Group 2: Test Statistics
+# ==============================================================================
+wvAddGroup "2. Test Statistics"
+wvAddSignal -win $_nWave2 tb_unified_buffer/test_count
+wvAddSignal -win $_nWave2 tb_unified_buffer/pass_count
+wvAddSignal -win $_nWave2 tb_unified_buffer/fail_count
+
+# ==============================================================================
+# Group 3: Host Write Path (TB -> DUT)
+# ==============================================================================
+wvAddGroup "3. Host Write Path"
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_wr_host_data_in\[0\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_wr_host_data_in\[1\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_wr_host_valid_in\[0\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_wr_host_valid_in\[1\]
+
+# ==============================================================================
+# Group 4: Read Control Commands
+# ==============================================================================
+wvAddGroup "4. Read Control"
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_start_in
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_ptr_select
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_addr_in
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_row_size
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_col_size
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_transpose
+
+# ==============================================================================
+# Group 5: Weight Read Output - TEST 1 CRITICAL
+# ==============================================================================
+wvAddGroup "5. Weight Read Output (Test 1)"
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_weight_data_out_0
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_weight_data_out_1
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_weight_valid_out_0
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_weight_valid_out_1
+
+# ==============================================================================
+# Group 6: Input Read Output - TEST 2 & TEST 3 CRITICAL
+# ==============================================================================
+wvAddGroup "6. Input Read Output (Test 2 & 3)"
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_input_data_out_0
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_input_data_out_1
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_input_valid_out_0
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_input_valid_out_1
+
+# ==============================================================================
+# Group 7: Memory Array - MOST CRITICAL
+# ==============================================================================
+wvAddGroup "7. Memory Array (CRITICAL)"
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/ub_memory
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/ub_memory\[0\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/ub_memory\[1\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/ub_memory\[2\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/ub_memory\[3\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/wr_ptr
+
+# ==============================================================================
+# Group 8: DUT Internal - Input Read FSM (TEST 2 & 3)
+# ==============================================================================
+wvAddGroup "8. Input Read FSM (Internal)"
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_input_ptr
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_input_row_size
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_input_col_size
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_input_time_counter
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_input_transpose
+
+# ==============================================================================
+# Group 9: DUT Internal - Weight Read FSM (TEST 1)
+# ==============================================================================
+wvAddGroup "9. Weight Read FSM (Internal)"
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_weight_ptr
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_weight_row_size
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_weight_col_size
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_weight_time_counter
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_weight_transpose
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_weight_skip_size
+
+# ==============================================================================
+# Group 10: Column Size Output
+# ==============================================================================
+wvAddGroup "10. Column Size Output"
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_col_size_out
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_col_size_valid_out
+
+# ==============================================================================
+# Group 11: VPU Write Path
+# ==============================================================================
+wvAddGroup "11. VPU Write Path"
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_wr_data_in\[0\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_wr_data_in\[1\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_wr_valid_in\[0\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_wr_valid_in\[1\]
+
+# ==============================================================================
+# Group 12: Other Read Outputs (Bias, Y, H)
+# ==============================================================================
+wvAddGroup "12. Other Read Outputs"
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_bias_data_out_0
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_bias_data_out_1
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_Y_data_out_0
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_Y_data_out_1
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_H_data_out_0
+wvAddSignal -win $_nWave2 tb_unified_buffer/ub_rd_H_data_out_1
+wvAddSignal -win $_nWave2 tb_unified_buffer/learning_rate_in
+
+# ==============================================================================
+# Group 13: DUT Internal - Bias Read FSM
+# ==============================================================================
+wvAddGroup "13. Bias Read FSM (Internal)"
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_bias_ptr
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_bias_row_size
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_bias_col_size
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_bias_time_counter
+
+# ==============================================================================
+# Group 14: DUT Internal - Y & H Read FSM
+# ==============================================================================
+wvAddGroup "14. Y & H Read FSM (Internal)"
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_Y_ptr
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_Y_time_counter
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_H_ptr
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_H_time_counter
+
+# ==============================================================================
+# Group 15: DUT Internal - Gradient Descent
+# ==============================================================================
+wvAddGroup "15. Gradient Descent (Internal)"
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/grad_descent_valid_in\[0\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/grad_descent_valid_in\[1\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/grad_bias_or_weight
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/grad_descent_ptr
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/value_old_in\[0\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/value_old_in\[1\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/value_updated_out\[0\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/value_updated_out\[1\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/grad_descent_done_out\[0\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/grad_descent_done_out\[1\]
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_grad_bias_ptr
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_grad_bias_time_counter
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_grad_weight_ptr
+wvAddSignal -win $_nWave2 tb_unified_buffer/dut/rd_grad_weight_time_counter
+
+# ==============================================================================
+# Display Settings
+# ==============================================================================
+wvSetRadix -win $_nWave2 -format Hex
+wvZoomAll -win $_nWave2
+
+puts "=========================================="
+puts "Unified Buffer Signals Loaded"
+puts "=========================================="
+puts ""
+puts "Coverage:"
+puts "  Test 1: Weight read (Group 5, 9)"
+puts "  Test 2: Input read (Group 6, 8)"
+puts "  Test 3: Row-major (Group 7, 6)"
+puts "  Test stats (Group 2)"
+puts ""
+puts "Key debugging groups:"
+puts "  - Group 7: Memory content"
+puts "  - Group 5: Weight outputs"
+puts "  - Group 6: Input outputs"
+puts "  - Group 8/9: FSM internals"
+puts "=========================================="
