@@ -68,3 +68,14 @@ _vendor/tiny-tpu/resume_test.png
 *.bak
 *.bak_*
 .gitignore.bak_*
+
+# Root synthesis/generated artifacts
+sim/waveforms/
+syn/*.mr
+syn/*-verilog.pvl
+syn/*-verilog.syn
+syn/default.svf
+syn/alib-52/
+syn/logs/
+syn/outputs/
+syn/reports/
