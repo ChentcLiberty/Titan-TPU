@@ -90,15 +90,8 @@
 
 - `_vendor/tiny-tpu/debug/`
 - `_vendor/tiny-tpu/rtl_nxn_refactor/`
-- `_vendor/tiny-tpu/src_axi/handshake_exp/`
 - `_vendor/tiny-tpu/src/unified_buffer_v2_simple.sv`
 - `_vendor/tiny-tpu/src_axi/unified_buffer*.sv` 的历史变体
-- `_vendor/tiny-tpu/test/test_bias_parent_verification.py`
-- `_vendor/tiny-tpu/test/test_loss_parent_verification.py`
-- `_vendor/tiny-tpu/test/test_leaky_relu_parent_verification.py`
-- `_vendor/tiny-tpu/test/test_leaky_relu_derivative_parent_verification.py`
-- `_vendor/tiny-tpu/test/test_systolic_boundary.py`
-- `_vendor/tiny-tpu/test/test_vpu_verification.py`
 - `docs/05_interview/`、`docs/06_rtl_summary/` 等面试/总结资料
 
 ## 3. 关于 epoch 与收敛的最终口径
