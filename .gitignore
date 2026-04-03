@@ -61,8 +61,8 @@ _vendor/tiny-tpu/sim_build_vcs/
 _vendor/tiny-tpu/vfastLog/
 _vendor/tiny-tpu/waveforms/*.fst
 _vendor/tiny-tpu/waveforms/vcd2fsdbLog/
-_vendor/tiny-tpu/resume_test.pdf
-_vendor/tiny-tpu/resume_test.png
+_vendor/tiny-tpu/*_test.pdf
+_vendor/tiny-tpu/*_test.png
 
 # Local backup files
 *.bak
@@ -80,11 +80,6 @@ syn/logs/
 syn/outputs/
 syn/reports/
 sim/vcs/vc_hdrs.h
-docs/05_interview/*.pdf
-docs/05_interview/*.png
 _vendor/tiny-tpu_timing_opt_20260328/
 _vendor/tiny-tpu/debug/
-_vendor/tiny-tpu/简历目录/
 
-# Private interview materials
-docs/05_interview/

@@ -1,6 +1,6 @@
 # Experiments
 
-这个目录统一收口面试准备阶段新增的可执行实验入口、VCS testbench、日志和波形。
+这个目录统一收口当前新增的可执行实验入口、VCS testbench、日志和波形。
 
 当前目标：
 

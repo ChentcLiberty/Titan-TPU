@@ -3,7 +3,6 @@
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Systolic Array Testbench - Professional Version
-// Author: Claude Sonnet 4.5
 // Date: 2026-01-24
 //
 // Features:

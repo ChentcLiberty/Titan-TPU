@@ -59,8 +59,8 @@ compiler/__pycache__/
 compiler/out/*.bak_*
 
 # Local one-off exports
-resume_test.pdf
-resume_test.png
+*_test.pdf
+*_test.png
 
 # Experiment outputs
 experiments/out/
